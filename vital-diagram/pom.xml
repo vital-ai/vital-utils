@@ -4,4 +4,332 @@
   <artifactId>vital-diagram</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>vital diagram</name>
+  
+   <repositories>
+  
+ <repository>
+    <id>vital-public-mvn-repo-releases</id>
+    <name>Vital AI Public Maven Repo Releases</name>
+    <url>https://github.com/vital-ai/vital-public-mvn-repo/raw/releases/</url>
+</repository>
+
+<repository>
+    <id>vital-public-mvn-repo-snapshots</id>
+    <name>Vital AI Public Maven Repo Snapshots</name>
+    <url>https://github.com/vital-ai/vital-public-mvn-repo/raw/snapshots/</url>
+</repository>
+
+  </repositories>
+  
+  
+  <build>
+    <plugins>
+	  <!-- assembly -->      
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>2.3</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <artifactSet>
+              </artifactSet>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      
+      
+      <plugin>
+   		<artifactId>maven-compiler-plugin</artifactId>
+    	<!-- 2.8.0-01 and later require maven-compiler-plugin 3.1 or higher -->
+   	  	<version>3.1</version>
+    	<configuration>
+      		<compilerId>groovy-eclipse-compiler</compilerId>
+      		<!-- set verbose to be true if you want lots of uninteresting messages -->
+      		<!-- <verbose>true</verbose> -->
+    	</configuration>
+    	<dependencies>
+      		<dependency>
+        		<groupId>org.codehaus.groovy</groupId>
+        		<artifactId>groovy-eclipse-compiler</artifactId>
+        		<version>2.8.0-01</version>
+      		</dependency>
+      		<!-- for 2.8.0-01 and later you must have an explicit dependency on groovy-eclipse-batch -->
+     		<dependency>
+        		<groupId>org.codehaus.groovy</groupId>
+        		<artifactId>groovy-eclipse-batch</artifactId>
+       			<version>2.1.8-01</version>
+        		<!-- or choose a different compiler version -->
+        		<!-- <version>1.8.6-01</version> -->
+        		<!-- <version>1.7.10-06</version> -->
+			</dependency>
+		</dependencies>
+  		</plugin>
+      
+    </plugins>
+  </build>
+  
+  
+  <dependencies>
+  
+  
+  <dependency>
+    	<groupId>com.typesafe</groupId>
+    	<artifactId>config</artifactId>	
+    	<version>1.0.0</version>	
+    </dependency>
+    <dependency>
+		<groupId>commons-io</groupId>
+		<artifactId>commons-io</artifactId>
+		<version>2.1</version>
+	</dependency>
+	<dependency>
+		<groupId>commons-lang</groupId>
+		<artifactId>commons-lang</artifactId>
+		<version>2.5</version>
+	</dependency>
+  
+  <dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>vital-domain</artifactId>
+      <version>0.1.0</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vital-domain/VitalDomain-groovy-0.1.0.jar</systemPath>
+    </dependency>
+  
+  
+  <dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>vitalsigns</artifactId>
+      <version>0.1.0</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/command/VitalSigns-0.1.0.jar</systemPath>
+    </dependency>
+  	
+  	<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>commons-cli</artifactId>
+      <version>1.2.0</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/commons-cli-1.2.jar</systemPath>
+    </dependency>
+  	
+  	<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>1.5.0</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/commons-codec-1.5.jar</systemPath>
+    </dependency>
+  	
+  	<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>jena-arq</artifactId>
+      <version>2.9.0</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/jena-arq-2.9.0-incubating.jar</systemPath>
+    </dependency>
+  	
+  	
+  	<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>jena-core</artifactId>
+      <version>2.7.0</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/jena-core-2.7.0-incubating.jar</systemPath>
+    </dependency>
+  				
+		
+	<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>commons-collections</artifactId>
+      <version>3.2.1</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/commons-collections-3.2.1.jar</systemPath>
+    </dependency>	
+
+	<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>jena-iri</artifactId>
+      <version>0.9.0</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/jena-iri-0.9.0-incubating.jar</systemPath>
+    </dependency>	
+
+<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>commons-httpclient</artifactId>
+      <version>3.1.0</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/commons-httpclient-3.1.jar</systemPath>
+    </dependency>	
+		
+
+	<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>log4j</artifactId>
+      <version>1.2.16</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/log4j-1.2.16.jar</systemPath>
+    </dependency>	
+
+<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.1.0</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/commons-io-2.1.jar</systemPath>
+    </dependency>	
+    
+ <dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>lucene-analyzers-common</artifactId>
+      <version>4.7.0</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/lucene-analyzers-common-4.7.0.jar</systemPath>
+    </dependency>   		
+		
+	<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>commons-lang</artifactId>
+      <version>3.3.1</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/commons-lang3-3.1.jar</systemPath>
+    </dependency>   		
+			
+<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>lucene-core</artifactId>
+      <version>4.7.0</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/lucene-core-4.7.0.jar</systemPath>
+    </dependency> 
+			
+
+<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>commons-loggin</artifactId>
+      <version>1.1.1</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/commons-logging-1.1.1.jar</systemPath>
+    </dependency> 
+
+
+<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>owl2vcs-vital</artifactId>
+      <version>0.0.1</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/owl2vcs-vital.jar</systemPath>
+    </dependency> 
+
+	<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>concurrentlinkedhashmap-lru</artifactId>
+      <version>1.3.2</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/concurrentlinkedhashmap-lru-1.3.2.jar</systemPath>
+    </dependency> 	
+
+
+<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>owlapi</artifactId>
+      <version>3.4.2</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/owlapi-3.4.2.jar</systemPath>
+    </dependency> 	
+	
+
+<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>config</artifactId>
+      <version>1.2.0</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/config-1.2.0.jar</systemPath>
+    </dependency>
+
+<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>1.6.4</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/slf4j-api-1.6.4.jar</systemPath>
+    </dependency>	
+	
+			
+	<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>1.6.4</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/slf4j-log4j12-1.6.4.jar</systemPath>
+    </dependency>	
+	
+<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>guava</artifactId>
+      <version>12.0.1</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/guava-12.0.1/guava-12.0.1.jar</systemPath>
+    </dependency>	
+		
+	<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>trove</artifactId>
+      <version>3.0.3</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/trove-3.0.3.jar</systemPath>
+    </dependency>			
+
+	<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>icu4j</artifactId>
+      <version>3.4.4</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/icu4j-3.4.4.jar</systemPath>
+    </dependency>
+				
+<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>xercesImpl</artifactId>
+      <version>2.10.0</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/xercesImpl-2.10.0.jar</systemPath>
+    </dependency>
+				
+<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>jackson-core-lgpl</artifactId>
+      <version>1.9.6</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/jackson-core-lgpl-1.9.6.jar</systemPath>
+    </dependency>
+
+<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>xml-apis</artifactId>
+      <version>1.4.01</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/xml-apis-1.4.01.jar</systemPath>
+    </dependency>
+		
+
+<dependency>
+      <groupId>vital-ai</groupId>
+      <artifactId>jackson-mapper-lgpl</artifactId>
+      <version>1.9.6</version>
+      <scope>system</scope>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/jackson-mapper-lgpl-1.9.6.jar</systemPath>
+    </dependency>
+  
+  </dependencies>
+  
+  
+  
 </project>
