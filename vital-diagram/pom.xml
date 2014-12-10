@@ -264,18 +264,18 @@
 <dependency>
       <groupId>vital-ai</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.6.4</version>
+      <version>1.7.5</version>
       <scope>system</scope>
-      <systemPath>${VITAL_HOME}/vitalsigns/lib/slf4j-api-1.6.4.jar</systemPath>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/slf4j-api-1.7.5.jar</systemPath>
     </dependency>	
 	
 			
 	<dependency>
       <groupId>vital-ai</groupId>
       <artifactId>slf4j-log4j12</artifactId>
-      <version>1.6.4</version>
+      <version>1.7.5</version>
       <scope>system</scope>
-      <systemPath>${VITAL_HOME}/vitalsigns/lib/slf4j-log4j12-1.6.4.jar</systemPath>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/slf4j-log4j12-1.7.5.jar</systemPath>
     </dependency>	
 	
 <dependency>
