@@ -1,0 +1,17 @@
+#!/usr/bin/env groovy
+
+def homeDir = new File(getClass().protectionDomain.codeSource.location.path).parentFile.parentFile.getAbsolutePath() + '/';
+
+// should this accept some command line arg for domain jars?
+// --domainjar=something.jar ?
+
+
+List jars = [homeDir + 'lib/vitalutilcommands.jar', homeDir + 'lib/VitalServiceMergedBundle.jar', homeDir + 'domain/nycschoolsrecommendationapp-domain.jar'];
+
+List cmd = ['groovy', '-cp', (String)jars.join(File.pathSeparator), homeDir + 'src/ai/vital/vitalutilcommands/VitalGrep.groovy'];
+for(String a : args) {
+	cmd.add(a);
+}
+//println(cmd);
+def process=new ProcessBuilder(cmd).redirectErrorStream(true).start()
+process.inputStream.eachLine {println it}
