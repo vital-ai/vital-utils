@@ -1,0 +1,54 @@
+<project name="vital-utils" default="main">
+
+	<property environment="env" />
+	<fail unless="env.VITAL_HOME" message="VITAL_HOME env variable not set!" />
+	<property name="VITAL_HOME" value="${env.VITAL_HOME}" />
+	<echo message="VITAL_HOME: ${VITAL_HOME}" />
+	
+	<property name="utils.dist.jar" value="dist/vitalutilscommand-0.1.0.jar" />
+
+	<property name="utils.build.dir" value="build_utils" />
+
+	
+	<path id="classpath">
+		<fileset dir="lib">
+			<include name="**/*.jar" />
+		</fileset>
+		
+		<fileset dir="${VITAL_HOME}">
+			<include name="vital-domain/VitalDomain-groovy-*.jar" />
+			<include name="vital-lucene/vital-lucene-*.jar" />
+			<include name="vitalsigns/command/VitalSigns-*.jar" />
+			<include name="vitalsigns/lib/**/*.jar" />
+			<include name="vitalservice/VitalService-*.jar" />
+		</fileset>
+		
+	</path>
+	
+	<taskdef name="groovyc"
+		classname="org.codehaus.groovy.ant.Groovyc"
+		classpathref="classpath" />
+	
+	
+	<target name="main">
+		
+		<mkdir dir="${basedir}/dist" />
+		
+		<delete file="${utils.dist.jar}" />
+		
+		<delete dir="${utils.build.dir}" />
+		<mkdir dir="${utils.build.dir}" />
+	
+		<groovyc srcdir="src" destdir="${utils.build.dir}">
+			<classpath>
+			    <path refid="classpath" />
+			  </classpath>
+		</groovyc>
+		
+		<jar destfile="${utils.dist.jar}" basedir="${utils.build.dir}" compress="true"></jar>
+		
+		<delete dir="${utils.build.dir}" />
+		
+	</target>
+	
+</project>
