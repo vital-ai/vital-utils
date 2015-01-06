@@ -42,8 +42,16 @@
 		<groovyc srcdir="src" destdir="${utils.build.dir}">
 			<classpath>
 			    <path refid="classpath" />
-			  </classpath>
+			</classpath>
+			<javac />
 		</groovyc>
+		
+		<copy todir="${utils.build.dir}">
+			<fileset dir="src">
+				<exclude name="**/*.groovy" />
+				<exclude name="**/*.java" />
+			</fileset>
+		</copy>
 		
 		<jar destfile="${utils.dist.jar}" basedir="${utils.build.dir}" compress="true"></jar>
 		

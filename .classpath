@@ -8,6 +8,8 @@
 	<classpathentry kind="var" path="VITAL_HOME/vitalservice/lib/config-1.2.0/config-1.2.0.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalservice/VitalService-0.1.0.jar"/>
 	<classpathentry kind="lib" path="lib/javacsv-2.1/javacsv-2.1.jar"/>
+	<classpathentry kind="lib" path="lib/owlhtml/owlhtml.jar"/>
+	<classpathentry kind="lib" path="lib/owlmanager/owlmanager.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/groovy-2.3.6/groovy-all-2.3.6.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/commons-cli-1.2.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/commons-codec-1.5.jar"/>
