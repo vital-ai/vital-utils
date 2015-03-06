@@ -6,16 +6,12 @@ import ai.vital.vitalservice.VitalStatus
 import ai.vital.vitalservice.factory.Factory;
 import ai.vital.vitalservice.query.ResultElement;
 import ai.vital.vitalservice.query.ResultList;
-import ai.vital.vitalservice.query.VitalExportQuery;
-import ai.vital.vitalservice.query.VitalPropertyConstraint
-import ai.vital.vitalservice.query.VitalQueryContainer;
-import ai.vital.vitalservice.query.VitalSortProperty;
-import ai.vital.vitalservice.query.VitalTypeConstraint
+import ai.vital.vitalservice.query.graph.VitalExportQuery
 import ai.vital.vitalservice.segment.VitalSegment
+import ai.vital.vitalsigns.block.BlockCompactStringSerializer
 import ai.vital.vitalsigns.model.GraphObject;
 import ai.vital.vitalsigns.model.VITAL_Node
 import ai.vital.vitalsigns.ontology.VitalCoreOntology;
-import ai.vital.vitalsigns.utils.BlockCompactStringSerializer;
 
 import java.util.zip.GZIPOutputStream
 
@@ -147,7 +143,6 @@ class VitalExport extends AbstractUtil {
 			VitalExportQuery sq = new VitalExportQuery()
 			sq.segments = [segmentObj]
 			sq.limit = limit
-			sq.components = []
 			
 			int offset = 0;
 			

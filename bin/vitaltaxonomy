@@ -14,7 +14,7 @@ def vitalhome = System.getenv('VITAL_HOME')
 
 def homeDir = vitalhome + "/" + "vitalutil" + "/"
 
-def mainClass = 'ai.vital.vitalutilcommands.VitalImport'
+def mainClass = 'ai.vital.vitalutilcommands.VitalTaxonomyCommand'
 
 List jars = [
 	vitalhome  + '/vitalsigns/command/VitalSigns-0.2.0.jar',
@@ -24,7 +24,7 @@ List jars = [
 
 new File(vitalhome, 'vital-domain').eachFile(FILES){
   if(it.name.endsWith(".jar")) {
-    jars.add(it.absolutePath)
+      jars.add(it.absolutePath)
   }
 }
 
@@ -65,7 +65,7 @@ if(tripleStoreMod.exists() && tripleStoreMod.isDirectory()) {
 
 new File(vitalhome, "domain-groovy-jar").eachFile(FILES) {
   if(it.name.endsWith(".jar")) {
-      jars.add(it.absolutePath)
+    jars.add(it.absolutePath)
   }
 }
 

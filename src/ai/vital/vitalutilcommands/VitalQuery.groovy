@@ -1,15 +1,23 @@
 package ai.vital.vitalutilcommands
 
+import ai.vital.property.IProperty
+import ai.vital.query.graphbuilder.GraphQueryBuilder;
 import ai.vital.vitalservice.VitalService
+import ai.vital.vitalservice.VitalStatus;
 import ai.vital.vitalservice.factory.Factory;
 import ai.vital.vitalservice.query.ResultElement;
 import ai.vital.vitalservice.query.ResultList;
-import ai.vital.vitalservice.query.VitalGraphQuery;
-import ai.vital.vitalservice.query.VitalSelectQuery
+import ai.vital.vitalservice.query.graph.VitalExportQuery;
+import ai.vital.vitalservice.query.graph.VitalGraphQuery
+import ai.vital.vitalservice.query.graph.VitalSelectQuery
+import ai.vital.vitalsigns.meta.GraphContext;
+import ai.vital.vitalsigns.model.GraphMatch;
 import ai.vital.vitalsigns.model.GraphObject;
-import ai.vital.vitalsigns.utils.BlockCompactStringSerializer;
+import ai.vital.vitalsigns.block.BlockCompactStringSerializer;
+import ai.vital.vitalsigns.datatype.VitalURI
 
 import org.apache.commons.io.FileUtils;
+
 
 /**
  * A script that queries vital service and persists results
@@ -23,9 +31,10 @@ class VitalQuery extends AbstractUtil {
 		def cli = new CliBuilder(usage: 'vitalquery [options]')
 		cli.with {
 			h longOpt: "help", "Show usage information", args: 0, required: false
-			o longOpt: "output", "output block file, it prints to console otherwise", args:1, required: false
+			o longOpt: "output", "output (.vital[.gz]|.sparql) block or sparql file (depending on -s flag), it prints to console otherwise", args:1, required: false
 			ow longOpt: "overwrite", "overwrite output file", args: 0, required: false
-			q longOpt: "query", "qurery file", args: 1, required: true
+			q longOpt: "query", "qurery file (.groovy|.builder) - groovy or query builder defined query", args: 1, required: true
+			s longOpt: "tosparql", "output the query as sparql instead of executing it"
 		}
 		
 		def options = cli.parse(args)
@@ -34,6 +43,10 @@ class VitalQuery extends AbstractUtil {
 		
 		File queryScriptFile = new File(options.q);
 		
+		boolean outputSparql = options.s ? true : false
+		
+		println "Output sparql ? ${outputSparql}"
+		println "Query script file: ${queryScriptFile.absolutePath}"
 		
 		
 		if(!queryScriptFile.isFile()) {
@@ -41,19 +54,41 @@ class VitalQuery extends AbstractUtil {
 			return
 		}
 		
+		boolean groovyInput = false 
+		boolean builderInput = false
+		if(queryScriptFile.name.endsWith(".groovy")) {
+			groovyInput = true
+		} else if(queryScriptFile.name.endsWith(".builder")) {
+			builderInput = true
+		} else {
+			error("Input query file name must end with .groovy or .builder : ${queryScriptFile.absolutePath}")
+			return
+		}
+		
 		File output = options.o ? new File(options.o) : null
 				
 		if(output != null) {
-			
-			if(!blockFileNameFilter.accept(output)) {
-				error("Output file name must end with .vital[.gz]: ${output.absolutePath}")
-				return
-			}
 			
 			Boolean overwrite = Boolean.TRUE.equals(options.ow)
 			
 			println ("Output file: ${output.absolutePath}")
 			println ("Overwrite ? " + overwrite)
+			
+			if(outputSparql) {
+				
+				if(!output.name.endsWith(".sparql")) {
+					error("Sparql output file name must end with .sparql : ${output.absolutePath}")
+					return
+				}
+				
+			} else {
+				if(!blockFileNameFilter.accept(output)) {
+					error("Output file name must end with .vital[.gz]: ${output.absolutePath}")
+					return
+				}
+			}
+			
+
 		
 			if(output.exists() && !overwrite) {
 				error("Output file already exists - use '-ow' option to overwrite - ${output.absolutePath}")
@@ -62,64 +97,158 @@ class VitalQuery extends AbstractUtil {
 			 
 		}
 		
-		println "Query script file: ${queryScriptFile.absolutePath}"
 		
-		String queryScript = FileUtils.readFileToString(queryScriptFile, "UTF-8")
-		
-		queryScript =
-		"import ai.vital.vitalservice.query.*;\n" +
-		"import ai.vital.vitalservice.query.VitalQueryContainer.Type;\n" +
-		queryScript;
+		VitalGraphQuery queryObject = null
 		
 		
-		GroovyShell shell = new GroovyShell();
-		Object _query = shell.evaluate(queryScript);
-
-		if(!(_query instanceof VitalSelectQuery) && !(_query instanceof VitalGraphQuery)) throw new Exception("A script must return a select or a graph query variable.");
+		if(groovyInput) {
+			
+			println "Parsing groovy query object definition..."
+			
+			String queryScript = FileUtils.readFileToString(queryScriptFile, "UTF-8")
+					
+			queryScript =
+				"import ai.vital.vitalservice.query.graph.*;\n" +
+				queryScript;
+			
+			
+			GroovyShell shell = new GroovyShell();
+			Object _query = shell.evaluate(queryScript);
+			
+			if(!(_query instanceof ai.vital.vitalservice.query.graph.VitalQuery)) {
+				error("A script must return a select or a graph query variable.")
+				return
+			}
+			
+			queryObject = _query
+			
+			
+		} else {
 		
+			println "Parsing query builder object definition..."
+			
+			String queryScript = FileUtils.readFileToString(queryScriptFile, "UTF-8")
+			
+			GraphQueryBuilder builder = new GraphQueryBuilder()
+			
+			queryObject = builder.queryString(queryScript).toQuery() 
+		
+		}
+		
+		if(queryObject instanceof VitalExportQuery) {
+			error("Vital export query not supported by vitalquery")
+			return
+		}
+		
+		if(outputSparql) {
+			queryObject.returnSparqlString = true
+		} else {
+			queryObject.returnSparqlString = false
+		}
 		
 		VitalService service = Factory.getVitalService()
 		println "Obtained vital service, type: ${service.class.canonicalName}"
 		
 		ResultList rl = null;
 		
-		if(_query instanceof VitalSelectQuery) {
+		if(queryObject instanceof VitalSelectQuery) {
 			
-			rl = service.selectQuery(_query)
+			rl = service.selectQuery(queryObject)
 			
-		} else if(_query instanceof VitalGraphQuery) {
+		} else if(queryObject instanceof VitalGraphQuery) {
 		
-			rl = service.graphQuery(_query)
+			rl = service.graphQuery(queryObject)
+		 
+		} else {
+			error "Unexpected query object: ${queryObject.class.canonicalName}"
+			return
+		}
 		
+		if( VitalStatus.Status.ok != rl.status.status ) {
+			error "Vital query error: ${rl.status.message}"
+			return
 		}
 		
 		OutputStream os = null
 		BlockCompactStringSerializer writer = null
 		OutputStreamWriter osw = null
+		
 		if(output != null) {
-			
-			writer = new BlockCompactStringSerializer(output);
+
+			if(outputSparql) {
+				osw = new OutputStreamWriter(new FileOutputStream(output))
+			} else {
+				writer = new BlockCompactStringSerializer(output);
+			}		
 			 
 		} else {
 		
 			osw = new OutputStreamWriter(System.out)
+			
+			if(outputSparql) {
+				
+			} else {
+				writer = new BlockCompactStringSerializer(osw)
+			}
 		
-			writer = new BlockCompactStringSerializer(osw)
 		
+		
+		}
+		
+		
+		if(outputSparql) {
+			
+			String queries = rl.status.message
+			
+			osw.write(queries)
+
+			osw.flush()
+						
+			if(output) {
+				osw.close()
+			}
+			
+			return
+			
 		}
 		
 		println ("Results: ${rl.results.size()}, total: ${rl.totalResults}")
 		
+		Set<String> uris = new HashSet<String>()
+		List<VitalURI> urisList = []
+
+				
+		for(GraphMatch gm : rl) {
+			
+			def graphURIs = gm.graphURIs
+			for(IProperty uri : graphURIs) {
+				String u = uri.toString()
+				if(uris.add(u)) {
+					urisList.add(VitalURI.withString(u))
+				}
+			}
+			
+		}
+		
+		println "Resolving ${uris.size()} URIs ..."
+		
+		List<GraphObject> objects = []
+		if(uris.size() > 0) {
+			objects = service.get(urisList, GraphContext.ServiceWide, [])
+		}
+		
 		boolean started = false
 		
-		for(ResultElement r : rl.results) {
+		int i = 0
+		for(GraphObject r : objects) {
 			
 			if(!started) {
 				writer.startBlock()
 				started = true
 			}	
 			
-			writer.writeGraphObject(r.graphObject)
+			writer.writeGraphObject(r)
+			i++
 			
 		}
 		
@@ -134,6 +263,12 @@ class VitalQuery extends AbstractUtil {
 		if(osw != null) {
 			osw.flush()
 		}
+
+		if(output != null) {
+			println "saved ${i} objects"
+		}
+				
+		
 	}
 	
 

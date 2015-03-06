@@ -1,6 +1,6 @@
 package ai.vital.vitalutilcommands
 
-import ai.vital.vitalsigns.utils.BlockCompactStringSerializer
+import ai.vital.vitalsigns.block.BlockCompactStringSerializer
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 import org.apache.commons.io.FileUtils
@@ -10,6 +10,8 @@ class AbstractUtil {
 	static String[] extensions = ['vital.gz', 'vital', 'gz'].toArray(new String[3]);
 	
 	static long t() { return System.currentTimeMillis()}
+	
+	public static boolean exit_not_exception = true 
 	
 	public static List<File> getBlockFilesFromPath(File path) {
 		
@@ -55,7 +57,15 @@ class AbstractUtil {
 	
 	static void error(String m) {
 		System.err.println "ERROR: ${m}"
-		System.exit(-1)
+		if(exit_not_exception) {
+			System.exit(-1)
+		} else {
+			throw new RuntimeException(m)
+		}
+	}
+	
+	protected static void o(String m) { 
+		println m
 	}
 	
 	static protected BlockCompactStringSerializer createSerializer(File outputTestData) throws IOException {

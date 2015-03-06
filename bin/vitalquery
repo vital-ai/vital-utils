@@ -17,8 +17,8 @@ def homeDir = vitalhome + "/" + "vitalutil" + "/"
 def mainClass = 'ai.vital.vitalutilcommands.VitalQuery'
 
 List jars = [
-	vitalhome  + '/vitalsigns/command/VitalSigns-0.1.0.jar',
-	homeDir + 'command/vitalutilscommand-0.1.0.jar'
+	vitalhome  + '/vitalsigns/command/VitalSigns-0.2.0.jar',
+	homeDir + 'command/vitalutilscommand-0.2.0.jar'
 ]
 
 

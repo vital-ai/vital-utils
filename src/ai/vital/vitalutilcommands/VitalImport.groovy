@@ -6,10 +6,10 @@ import ai.vital.endpoint.EndpointType;
 import ai.vital.vitalsigns.datatype.VitalURI;
 import ai.vital.vitalsigns.model.GraphObject
 import ai.vital.vitalsigns.model.VITAL_Node;
-import ai.vital.vitalsigns.utils.BlockCompactStringSerializer
-import ai.vital.vitalsigns.utils.BlockCompactStringSerializer.BlockIterator;
-import ai.vital.vitalsigns.utils.BlockCompactStringSerializer.VitalBlock
-import ai.vital.vitalsigns.utils.VitalNTripleIterator
+import ai.vital.vitalsigns.block.BlockCompactStringSerializer
+import ai.vital.vitalsigns.block.BlockCompactStringSerializer.BlockIterator;
+import ai.vital.vitalsigns.block.BlockCompactStringSerializer.VitalBlock
+import ai.vital.vitalsigns.rdf.VitalNTripleIterator
 import ai.vital.vitalservice.VitalService;
 import ai.vital.vitalservice.VitalStatus
 import ai.vital.vitalservice.factory.Factory

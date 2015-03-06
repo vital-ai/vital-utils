@@ -5,7 +5,7 @@
 	<property name="VITAL_HOME" value="${env.VITAL_HOME}" />
 	<echo message="VITAL_HOME: ${VITAL_HOME}" />
 	
-	<property name="utils.dist.jar" value="dist/vitalutilscommand-0.1.0.jar" />
+	<property name="utils.dist.jar" value="dist/vitalutilscommand-0.2.0.jar" />
 
 	<property name="utils.build.dir" value="build_utils" />
 

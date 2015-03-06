@@ -6,7 +6,7 @@ import org.apache.commons.io.IOUtils;
 import ai.vital.domain.ontology.VitalOntology;
 import ai.vital.vitalsigns.VitalSigns;
 import ai.vital.vitalsigns.model.DomainOntology
-import ai.vital.vitalsigns.utils.BlockCompactStringSerializer;
+import ai.vital.vitalsigns.block.BlockCompactStringSerializer;
 
 /**
  * a script that merges different vital block files

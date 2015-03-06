@@ -3,20 +3,29 @@ package ai.vital.vitalutilcommands
 import org.apache.commons.io.FileUtils;
 
 import ai.vital.endpoint.EndpointType;
+import ai.vital.property.URIProperty
 import ai.vital.vitalservice.VitalService
 import ai.vital.vitalservice.VitalStatus;
 import ai.vital.vitalservice.factory.Factory
 import ai.vital.vitalservice.query.QueryPathElement;
 import ai.vital.vitalservice.query.ResultElement;
 import ai.vital.vitalservice.query.ResultList;
-import ai.vital.vitalservice.query.VitalGraphQuery;
-import ai.vital.vitalservice.query.VitalSelectQuery
+import ai.vital.vitalservice.query.graph.Connector;
+import ai.vital.vitalservice.query.graph.Destination;
+import ai.vital.vitalservice.query.graph.GraphElement;
+import ai.vital.vitalservice.query.graph.QueryContainerType;
+import ai.vital.vitalservice.query.graph.Source;
+import ai.vital.vitalservice.query.graph.VitalGraphArcContainer;
+import ai.vital.vitalservice.query.graph.VitalGraphArcElement
+import ai.vital.vitalservice.query.graph.VitalGraphCriteriaContainer;
+import ai.vital.vitalservice.query.graph.VitalGraphQuery
+import ai.vital.vitalservice.query.graph.VitalGraphQueryPropertyCriterion;
+import ai.vital.vitalservice.query.graph.VitalSelectQuery
+import ai.vital.vitalservice.segment.VitalSegment;
 import ai.vital.vitalsigns.VitalSigns;
 import ai.vital.vitalsigns.datatype.VitalURI;
-import ai.vital.vitalsigns.graph.Graph;
-import ai.vital.vitalsigns.meta.GraphSetsRegistry;
+import ai.vital.vitalsigns.meta.PathElement
 import ai.vital.vitalsigns.model.GraphObject;
-import ai.vital.vitalsigns.model.PathElement
 
 
 class VitalDeleteCommand extends AbstractUtil {
@@ -35,6 +44,11 @@ class VitalDeleteCommand extends AbstractUtil {
 		
 		if(!options || options.h) return
 		
+		//TODO implement the queries!
+		if(true) {
+			System.err.println "NOT IMPLEMENTED"
+			System.exit(-1)
+		}
 		VitalService service = Factory.getVitalService()
 		println "Obtained vital service, type: ${EndpointType.VITALPRIME}"
 		
@@ -125,18 +139,10 @@ class VitalDeleteCommand extends AbstractUtil {
 					
 					print " ... "
 					
-					List<List<QueryPathElement>> paths = getPaths(g.getClass())
+					VitalGraphQuery gq = getPaths(g.URI, g.getClass(), sq.segments)
 					
-					if(paths.size() == 0) {
-						println "No taxonomy paths for class: ${g.class.canonicalName}"
-						continue
-					}
+					if(gq == null) continue;
 					
-					VitalGraphQuery gq = new VitalGraphQuery()
-					gq.pathsElements = paths
-					gq.rootUris = [g.URI]
-					gq.segments = sq.segments
-
 					ResultList gqRl = service.graphQuery(gq)					
 
 					int s = gqRl.results.size()
@@ -183,20 +189,42 @@ class VitalDeleteCommand extends AbstractUtil {
 		
 	}
 
-	static Map<Class, List<List<QueryPathElement>> > cache = [:]
+	static Map<Class, List<List<PathElement>>> cache = [:]
 	
-	static List<List<QueryPathElement>> getPaths(Class cls) {
+	static VitalGraphQuery getPaths(String rootURI, Class cls, List<VitalSegment> segments) {
 		
-		List<List<QueryPathElement>> paths = cache.get(cls)
+		//forward pats
+		List<List<PathElement>> paths = cache.get(cls) 
 		
-		if(paths != null) return paths
-		
-		List<List<PathElement>> vpaths = GraphSetsRegistry.get().getPaths(cls);
-		
-		paths = new ArrayList<List<QueryPathElement>>(vpaths.size());
+		if(paths == null) {
+			paths = VitalSigns.get().getClassesRegistry().getPaths(cls, true);
+			cache.put(cls, paths)
+		}
+				
+		if(paths.size() == 0) {
+			println "No taxonomy paths for class: ${cls.canonicalName}"
+			return null;
+		}
+
+		VitalGraphQuery gq = new VitalGraphQuery(QueryContainerType.and);
+		gq.segments = segments
 		
 		//convert paths into query path elements
-		for(List<PathElement> path : vpaths) {
+		
+		VitalGraphArcContainer topArc = new VitalGraphArcContainer(QueryContainerType.and, new VitalGraphArcElement(Source.CURRENT, Connector.EMPTY, Destination.EMPTY));
+		VitalGraphCriteriaContainer cc = new VitalGraphCriteriaContainer(QueryContainerType.and)
+		VitalGraphQueryPropertyCriterion rootURICrit = new VitalGraphQueryPropertyCriterion(VitalGraphQueryPropertyCriterion.URI)
+		rootURICrit.symbol = GraphElement.Source
+		rootURICrit.value = new URIProperty(rootURI)
+		cc.add(rootURICrit)
+		topArc.add(cc)
+		
+		VitalGraphArcContainer parent = topArc 
+		
+		for(List<PathElement> path : paths) {
+			
+			
+			/*
 			
 			List<QueryPathElement> qpath = new ArrayList<QueryPathElement>(path.size());
 			
@@ -208,7 +236,7 @@ class VitalDeleteCommand extends AbstractUtil {
 			}
 			
 			paths.add(qpath)
-			
+			*/
 		}
 		
 		cache.put(cls, paths)

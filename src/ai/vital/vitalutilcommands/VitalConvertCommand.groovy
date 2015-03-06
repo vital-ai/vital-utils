@@ -9,15 +9,25 @@ import java.util.zip.GZIPOutputStream
 
 import org.apache.commons.io.IOUtils;
 
+import ai.vital.property.BooleanProperty;
+import ai.vital.property.DateProperty;
+import ai.vital.property.DoubleProperty;
+import ai.vital.property.FloatProperty;
+import ai.vital.property.GeoLocationProperty;
+import ai.vital.property.IProperty
+import ai.vital.property.IntegerProperty;
+import ai.vital.property.LongProperty
+import ai.vital.property.NumberProperty
+import ai.vital.property.OtherProperty;
+import ai.vital.property.StringProperty;
+import ai.vital.property.URIProperty
 import ai.vital.vitalsigns.VitalSigns;
-import ai.vital.vitalsigns.graph.Graph;
+import ai.vital.vitalsigns.block.BlockCompactStringSerializer
+import ai.vital.vitalsigns.block.BlockCompactStringSerializer.BlockIterator
+import ai.vital.vitalsigns.block.BlockCompactStringSerializer.VitalBlock
 import ai.vital.vitalsigns.model.GraphObject;
-import ai.vital.vitalsigns.model.PropertyInterface;
-import ai.vital.vitalsigns.model.URIPropertyValue
-import ai.vital.vitalsigns.utils.BlockCompactStringSerializer;
-import ai.vital.vitalsigns.utils.BlockCompactStringSerializer.BlockIterator;
-import ai.vital.vitalsigns.utils.BlockCompactStringSerializer.VitalBlock
-import ai.vital.vitalsigns.utils.VitalNTripleIterator
+import ai.vital.vitalsigns.properties.PropertyMetadata;
+import ai.vital.vitalsigns.rdf.VitalNTripleIterator
 
 import com.csvreader.CsvReader;
 import com.csvreader.CsvWriter;
@@ -182,7 +192,7 @@ class VitalConvertCommand extends AbstractUtil {
 		
 		Map<String, Integer> propertyToColumn = new HashMap<String, Integer>()
 
-		Map<String, PropertyInterface> propertyToInterface = new HashMap<String, Integer>()
+		Map<String, IProperty> propertyToInterface = new HashMap<String, IProperty>()
 				
 		String mapURIPattern = null
 		
@@ -265,12 +275,12 @@ class VitalConvertCommand extends AbstractUtil {
 					
 				} else {
 				
+					PropertyMetadata pm = VitalSigns.get().getPropertiesRegistry().getPropertyByShortName(clazzObj, property)
 				
-					PropertyInterface pInt = VitalSigns.get().getClassProperty(clazzObj, property)
-					
-					
-					if(pInt == null) error("Map file line: ${c} - Class ${clazz} property ${property} not found - ${l}")
+					if(pm == null) error("Map file line: ${c} - Class ${clazz} property ${property} not found - ${l}")
 				
+					IProperty pInt = pm.getPattern()
+					
 					Matcher m = columnNumberPattern.matcher(mapping)
 					
 					if(!m.matches()) {
@@ -407,14 +417,16 @@ class VitalConvertCommand extends AbstractUtil {
 												
 					} else {
 					
-						PropertyInterface pInt = VitalSigns.get().getClassProperty(clazzObj, property)
-								
-						if(pInt == null) error("Class ${clazz} property ${property} not found, column ${i}")
+						PropertyMetadata pm = VitalSigns.get().getPropertiesRegistry().getPropertyByShortName(clazzObj, property)
+					
+						if(pm == null) error("Class ${clazz} property ${property} not found, column ${i}")
+					
+						IProperty pInt = pm.getPattern()
 						
 						if(propertyToColumn.containsKey(property)) error("Property ${property} mapped twice, columns ${i} and ${propertyToColumn.get(property)}")
 								
-								
 						propertyToInterface.put(property, pInt)
+						
 					}
 					
 					
@@ -464,13 +476,13 @@ class VitalConvertCommand extends AbstractUtil {
 					String propertyName = column2Prop.get(i)
 					if(!propertyName) continue
 
-					PropertyInterface pInt = propertyToInterface.get(propertyName)
+					IProperty pInt = propertyToInterface.get(propertyName)
 					
 					String v = vs[i]
 					
 					//string to value
 					
-					g."${propertyName}" = de(v, pInt.getPropertyClass())
+					g."${propertyName}" = de(v, pInt.unwrapped().getClass())
 					
 					
 				}
@@ -551,7 +563,7 @@ class VitalConvertCommand extends AbstractUtil {
 				
 				String[] vals = new String[propertyToColumn.size()]
 
-				Map<String, PropertyInterface> propsMap = g.properties
+				Map<String, IProperty> propsMap = g.propertiesMap
 						
 				for(int i = 0; i < propertyToColumn.size(); i++) {
 					
@@ -575,11 +587,11 @@ class VitalConvertCommand extends AbstractUtil {
 						
 					} else {
 					
-						PropertyInterface pInt = propsMap.get(property)
+						IProperty pInt = propsMap.get(property)
 						
-						if(pInt != null && pInt.value != null) {
+						if(pInt != null) {
 						
-							v = es(pInt.value) 
+							v = es(pInt.rawValue())
 							
 						}
 						
@@ -607,41 +619,42 @@ class VitalConvertCommand extends AbstractUtil {
 	}
 
 	
-	//XXX copied and modified from compact string format!
-	private static <T> T de(String deserialized, Class<T> clazz) {
-		
-		if(clazz == String) {
-			return deserialized;
-		} else if(clazz == URIPropertyValue) {
-			return new URIPropertyValue(deserialized);
-		} else if(deserialized.isEmpty()) {
-			return null
-		} else if(clazz == Boolean) {
-			return Boolean.parseBoolean(deserialized);
-		} else if(clazz == Integer) {
-			return Integer.parseInt(deserialized);
-		} else if(clazz == Long) {
-			return Long.parseLong(deserialized);
-		} else if(clazz == Double) {
-			return Double.parseDouble(deserialized);
-		} else if(clazz == Float) {
-			return Float.parseFloat(deserialized);
-		} else if(clazz == Date) {
-			return new Date(Long.parseLong(deserialized));
+	//XXX copied from compactstring !
+	public static Object de(String input, Class<?> clazz) {
+	
+		if(clazz == String.class || clazz == StringProperty.class || clazz == URIProperty.class) {
+			return input
+		} else if(clazz == Boolean.class || clazz == BooleanProperty.class) {
+			return new Boolean( Boolean.parseBoolean(input));
+		} else if(clazz == Integer.class || clazz == IntegerProperty.class) {
+			return new Integer(Integer.parseInt(input));
+		} else if(clazz == Long.class || clazz == LongProperty.class) {
+			return new Long(Long.parseLong(input));
+		} else if(clazz == Double.class || clazz == DoubleProperty.class) {
+			return new Double(Double.parseDouble(input));
+		} else if(clazz == Float.class || clazz == FloatProperty.class) {
+			return new Float(Float.parseFloat(input));
+		} else if(clazz == Date.class || clazz == DateProperty.class) {
+			return new Date(Long.parseLong(input));
+		} else if(clazz == GeoLocationProperty.class) {
+			return GeoLocationProperty.fromRDFString(input);
+		} else if(clazz == OtherProperty.class) {
+			return OtherProperty.fromRDFString(input);
 		} else {
-			throw new Exception("Unsupported data type: " + clazz.getCanonicalName());
+			throw new RuntimeException("Unsupported data type: " + clazz.getCanonicalName());
 		}
-			
+		
 	}
 	
-	private static String es(Object input) {
+	//serialize value into string
+	public static String es(Object input) {
 		
 		String s = null;
 		
+		//escape only string values
+			
 		if(input instanceof String) {
 			s = (String)input;
-		} else if(input instanceof URIPropertyValue) {
-			s = ((URIPropertyValue) input).getURI();
 		} else if(input instanceof Boolean) {
 			s = "" + input;
 		} else if(input instanceof Integer) {
@@ -654,10 +667,15 @@ class VitalConvertCommand extends AbstractUtil {
 			s = "" + input;
 		} else if(input instanceof Date) {
 			s = "" + ((Date)input).getTime();
+		} else if(input instanceof GeoLocationProperty) {
+			s = ((GeoLocationProperty)input).toRDFValue();
+		} else if(input instanceof OtherProperty) {
+			s = ((OtherProperty)input).toRDFString();
 		} else {
-			throw new Exception("Unsupported data type: " + input.getClass().getCanonicalName());
+			throw new RuntimeException("Unsupported data type: " + input.getClass().getCanonicalName());
 		}
 		return s;
+		
 		//all literal properties
 		
 	}

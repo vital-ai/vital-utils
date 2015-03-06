@@ -1,8 +1,8 @@
 package ai.vital.vitalutilcommands
 
 import ai.vital.vitalsigns.model.GraphObject
-import ai.vital.vitalsigns.utils.BlockCompactStringSerializer
-import ai.vital.vitalsigns.utils.BlockCompactStringSerializer.VitalBlock
+import ai.vital.vitalsigns.block.BlockCompactStringSerializer
+import ai.vital.vitalsigns.block.BlockCompactStringSerializer.VitalBlock
 
 import ai.vital.vitalsigns.VitalSigns
 
