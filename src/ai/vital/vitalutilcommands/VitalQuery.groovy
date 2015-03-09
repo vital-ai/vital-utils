@@ -241,6 +241,7 @@ class VitalQuery extends AbstractUtil {
 		Set<String> uris = new HashSet<String>()
 		List<VitalURI> urisList = []
 
+		Map<String, Set<String>> mainObject2Block = new LinkedHashMap<String, Set<String>>();
 				
 		for(GraphMatch gm : rl) {
 			
@@ -253,8 +254,20 @@ class VitalQuery extends AbstractUtil {
 				}
 			}*/
 			
+			Set<String> groupURIs = null
+			String mainObjectURI = null
 			if(group) {
-				if( gm[mainProperty] == null ) error("No bound variable in graph match: ${mainProperty}, make sure the query binds to it")
+				URIProperty mainURIProp = gm[mainProperty]
+				if( mainURIProp == null ) error("No bound variable in graph match: ${mainProperty}, make sure the query binds to it")
+				mainObjectURI = mainURIProp.get()
+				
+				groupURIs = mainObject2Block.get(mainObjectURI)
+				
+				if(groupURIs == null) {
+					groupURIs = new HashSet<String>()
+					mainObject2Block.put(mainObjectURI, groupURIs)
+				}
+				
 			}
 			
 			for(Entry<String, Object> e : gm.getOverriddenMap().entrySet()) {
@@ -265,10 +278,14 @@ class VitalQuery extends AbstractUtil {
 					urisList.add(VitalURI.withString(u))
 				}
 				
+				if(group) {
+					if(!u.equals(mainObjectURI)) {
+						groupURIs.add(u)
+					}
+				}
+				
+				
 			}
-			
-			
-			
 			
 		}
 		
@@ -287,34 +304,31 @@ class VitalQuery extends AbstractUtil {
 		
 		if(group) {
 			
-			for(GraphMatch gm : rl) {
+			
+			//just analyze groups
+			
+			for(Entry<String, Set<String>> entry : mainObject2Block.entrySet()) {
 				
-				URIProperty mainURI = gm[mainProperty]
+				String mainURI = entry.getKey()
 				
-				GraphObject mainObj = mapped[mainURI.get()]
+				GraphObject mainObj = mapped.get(mainURI)
 				
-				if(mainObj == null) error("Main object not found: ${mainURI.get()}")
+				if(mainObj == null) error("Main object not found: ${mainURI}")
 				
 				writer.startBlock()
 				
 				writer.writeGraphObject(mainObj)
-				
-				for(Entry<String, Object> e : gm.getOverriddenMap().entrySet()) {
-					
-					if(mainProperty.equals(e.key)) continue
-					
-					URIProperty uri = e.getValue()
-					String u = uri.get()
-					
-					GraphObject g = mapped.get(u)
+
+				for(String uri : entry.getValue() ) {
+
+					GraphObject g = mapped.get(uri)					
 					
 					if(g != null) {
 						writer.writeGraphObject(g)
 					} else {
-						error("Graph object not found: ${u}")
+						error("Graph object not found: ${uri}")
 					}
-					
-				}
+				}				
 				
 				writer.endBlock()
 				
@@ -354,7 +368,7 @@ class VitalQuery extends AbstractUtil {
 		}
 
 		if(output != null) {
-			println "saved ${i} ${group ? 'blocks' : 'objects'}"
+			println "saved ${i} ${group ? 'block' : 'object'}${i != 1 ? 's': ''}"
 		}
 				
 		
