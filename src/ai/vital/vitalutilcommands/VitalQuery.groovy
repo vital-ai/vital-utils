@@ -1,6 +1,8 @@
 package ai.vital.vitalutilcommands
 
+import ai.vital.property.BooleanProperty;
 import ai.vital.property.IProperty
+import ai.vital.property.URIProperty;
 import ai.vital.query.graphbuilder.GraphQueryBuilder;
 import ai.vital.vitalservice.VitalService
 import ai.vital.vitalservice.VitalStatus;
@@ -15,6 +17,8 @@ import ai.vital.vitalsigns.model.GraphMatch;
 import ai.vital.vitalsigns.model.GraphObject;
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer;
 import ai.vital.vitalsigns.datatype.VitalURI
+
+import java.util.Map.Entry
 
 import org.apache.commons.io.FileUtils;
 
@@ -34,7 +38,10 @@ class VitalQuery extends AbstractUtil {
 			o longOpt: "output", "output (.vital[.gz]|.sparql) block or sparql file (depending on -s flag), it prints to console otherwise", args:1, required: false
 			ow longOpt: "overwrite", "overwrite output file", args: 0, required: false
 			q longOpt: "query", "qurery file (.groovy|.builder) - groovy or query builder defined query", args: 1, required: true
-			s longOpt: "tosparql", "output the query as sparql instead of executing it"
+			s longOpt: "tosparql", "output the query as sparql instead of executing it", args: 0, required: false
+			g longOpt: "group", "group graph matches into blocks, explicit boolean flag parameter [true|false], requires mainProp", args: 1, required: false
+			mp longOpt: "mainProp", "main bound property, required when --group=true", args: 1, required: false
+			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 		}
 		
 		def options = cli.parse(args)
@@ -48,6 +55,17 @@ class VitalQuery extends AbstractUtil {
 		println "Output sparql ? ${outputSparql}"
 		println "Query script file: ${queryScriptFile.absolutePath}"
 		
+		String serviceProfile = options.prof ? options.prof : null
+		
+		Boolean group = options.g ? Boolean.parseBoolean( options.g ) : false 
+		
+		println "Group ? ${group}"
+		
+		String mainProperty = options.mp ? options.mp : null 
+		if(group) {
+			if(!mainProperty) error("mainProperty not set, required when group=true")
+			println "Main Property: ${mainProperty}"
+		}
 		
 		if(!queryScriptFile.isFile()) {
 			error "Query script file path does not exist or is not a file"
@@ -97,6 +115,12 @@ class VitalQuery extends AbstractUtil {
 			 
 		}
 		
+		if(serviceProfile != null) {
+			println "Setting service profile: ${serviceProfile}"
+			Factory.setServiceProfile(serviceProfile)
+		} else {
+			println "Default service profile"
+		}
 		
 		VitalGraphQuery queryObject = null
 		
@@ -220,41 +244,106 @@ class VitalQuery extends AbstractUtil {
 				
 		for(GraphMatch gm : rl) {
 			
+			/*
 			def graphURIs = gm.graphURIs
 			for(IProperty uri : graphURIs) {
 				String u = uri.toString()
 				if(uris.add(u)) {
 					urisList.add(VitalURI.withString(u))
 				}
+			}*/
+			
+			if(group) {
+				if( gm[mainProperty] == null ) error("No bound variable in graph match: ${mainProperty}, make sure the query binds to it")
 			}
+			
+			for(Entry<String, Object> e : gm.getOverriddenMap().entrySet()) {
+				
+				URIProperty uri = e.getValue()
+				String u = uri.get()
+				if(uris.add(u)) {
+					urisList.add(VitalURI.withString(u))
+				}
+				
+			}
+			
+			
+			
 			
 		}
 		
 		println "Resolving ${uris.size()} URIs ..."
 		
 		List<GraphObject> objects = []
+		Map<String, GraphObject> mapped = [:]
 		if(uris.size() > 0) {
 			objects = service.get(urisList, GraphContext.ServiceWide, [])
+			for(GraphObject g : objects) {
+				mapped.put(g.URI, g)
+			}
 		}
-		
-		boolean started = false
 		
 		int i = 0
-		for(GraphObject r : objects) {
+		
+		if(group) {
 			
-			if(!started) {
+			for(GraphMatch gm : rl) {
+				
+				URIProperty mainURI = gm[mainProperty]
+				
+				GraphObject mainObj = mapped[mainURI.get()]
+				
+				if(mainObj == null) error("Main object not found: ${mainURI.get()}")
+				
 				writer.startBlock()
-				started = true
-			}	
+				
+				writer.writeGraphObject(mainObj)
+				
+				for(Entry<String, Object> e : gm.getOverriddenMap().entrySet()) {
+					
+					if(mainProperty.equals(e.key)) continue
+					
+					URIProperty uri = e.getValue()
+					String u = uri.get()
+					
+					GraphObject g = mapped.get(u)
+					
+					if(g != null) {
+						writer.writeGraphObject(g)
+					} else {
+						error("Graph object not found: ${u}")
+					}
+					
+				}
+				
+				writer.endBlock()
+				
+				i++
+				
+			}
 			
-			writer.writeGraphObject(r)
-			i++
 			
+		} else {
+		
+			boolean started = false
+					
+			for(GraphObject r : objects) {
+						
+				if(!started) {
+					writer.startBlock()
+					started = true
+				}	
+						
+				writer.writeGraphObject(r)
+				i++
+						
+			}
+			
+			if(started) {
+				writer.endBlock()
+			}
 		}
 		
-		if(started) {
-			writer.endBlock()
-		}
 		
 		if(output != null) {
 			writer.close()
@@ -265,7 +354,7 @@ class VitalQuery extends AbstractUtil {
 		}
 
 		if(output != null) {
-			println "saved ${i} objects"
+			println "saved ${i} ${group ? 'blocks' : 'objects'}"
 		}
 				
 		
