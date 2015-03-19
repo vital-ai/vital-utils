@@ -34,7 +34,9 @@ class VitalImport extends AbstractUtil {
 			s longOpt: "segment", "target segment", args: 1, required: true
 			b longOpt: "batch", "blocks per batch, default: ${DEFAULT_BLOCKS}", args: 1, required: false
 			v longOpt: "verbose", "report import progress (only in non-big-files mode)", args: 0, required: false
-			c longOpt: "check", "check input files - DOES NOT IMPORT", args: 0, required: false 
+			c longOpt: "check", "check input files - DOES NOT IMPORT", args: 0, required: false
+			bf longOpt: "bigFiles", "[true|false] flag, force big files flag (only vitalprime), default true", args: 1, required: false
+			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 			//bf longOpt: 'bigfiles', "the flag to import the data in background, after they're uploaded", args: 0 , required: false
 		}
 		
@@ -109,8 +111,17 @@ class VitalImport extends AbstractUtil {
 		
 		println ""
 		
+		
+		String profile = options.prof ? options.prof : null
+		if(profile != null) {
+			println "Setting custom vital service profile: ${profile}"
+			Factory.setServiceProfile(profile)
+		} else {
+			println "Using default vital service profile..."
+		}
+		
 		VitalService service = Factory.getVitalService()
-		println "Obtained vital service, type: ${service.class.canonicalName}"
+		println "Obtained vital service, type: ${service.getEndpointType()}"
 		
 		VitalSegment segmentObj = null;
 		for(VitalSegment s : service.listSegments()) {
@@ -125,9 +136,22 @@ class VitalImport extends AbstractUtil {
 			return
 		}
 		
+		Boolean bigFilesForced = options.bf ? Boolean.parseBoolean(options.bf) : null
+		
 		boolean bigFiles = service.getEndpointType() == EndpointType.VITALPRIME
 		
 		println "Big files mode ? ${bigFiles} (service.getEndpointType().getName())"
+		
+		if(bigFiles) {
+			if(bigFilesForced != null) {
+				println "Forced big files setting: ${bigFilesForced}"
+				bigFiles = bigFilesForced.booleanValue()
+			}
+		} else {
+			if(bigFilesForced != null) {
+				println "WARNING: ignoring bigFiles flag - not a vitalprime endpoint"
+			}
+		}
 		
 		if(!check && bigFiles) {
 			

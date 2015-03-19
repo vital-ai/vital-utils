@@ -39,6 +39,7 @@ class VitalFtpCommand extends AbstractUtil {
 		putCLI.with {
 			f longOpt: "file", "local file to upload", args: 1, required: true
 			ow longOpt: "overwrite", "overwrite remote file if exists", args: 0, required: false
+			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 		}
 		cmd2CLI.put(CMD_PUT, putCLI)
 		
@@ -47,23 +48,26 @@ class VitalFtpCommand extends AbstractUtil {
 			n longOpt: "name", "remote file name", args: 1, required: true
 			d longOpt: "directory", "output directory to save the file", args: 1, required: true
 			ow longOpt: "overwrite", "overwrite the output file if exists", args: 0, required: false
+			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 		}
 		cmd2CLI.put(CMD_GET, getCLI)
 		
-		def lsCLI = new CliBuilder(usage: "${VF} ${CMD_LS} (no options)")
+		def lsCLI = new CliBuilder(usage: "${VF} ${CMD_LS} [options]")
 		lsCLI.with {
+			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 		}
 		cmd2CLI.put(CMD_LS, lsCLI)
 		
 		def delCLI = new CliBuilder(usage: "${VF} ${CMD_DEL} [options]")
 		delCLI.with {
 			n longOpt: "name", "remote file name", args: 1, required: true
+			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 		}
 		cmd2CLI.put(CMD_DEL, delCLI)
 	
 		def purgeCLI = new CliBuilder(usage: "${VF} ${CMD_PURGE} (no options)")
 		purgeCLI.with {
-			
+			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 		}
 		cmd2CLI.put(CMD_PURGE, purgeCLI)
 			
@@ -109,7 +113,16 @@ class VitalFtpCommand extends AbstractUtil {
 		if(!options) {
 			return
 		}
+		
+		String profile = options.prof ? options.prof : null
 
+		if(profile != null) {
+			println "Setting custom vital service profile: ${profile}"
+			Factory.setServiceProfile(profile)
+		} else {
+			println "Using default vital service profile..."
+		}
+		
 		VitalService service = Factory.getVitalService()
 		
 		if(service.getEndpointType() != EndpointType.VITALPRIME) {
@@ -136,7 +149,7 @@ class VitalFtpCommand extends AbstractUtil {
 				
 				VITAL_Node node = re.graphObject
 				
-				println "${++i}. ${node.name}\t\t${node.active ? '[IN USE]' : '\t'} ${new Date(node.timestamp)}"
+				println "${++i}. ${node.name}\t\t${node.active ? '[IN USE]' : '\t'} ${new Date(node.timestamp.rawValue())}"
 				
 			}
 			

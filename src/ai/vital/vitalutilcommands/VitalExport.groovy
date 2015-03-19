@@ -40,6 +40,8 @@ class VitalExport extends AbstractUtil {
 			ow longOpt: "overwrite", "overwrite output file", args: 0, required: false
 			s longOpt: "segment", "target segment", args: 1, required: true
 			b longOpt: "block", "block size (only .vital[.gz]), default ${DEFAULT_BLOCK_SIZE}", args: 1, required: false
+			bf longOpt: "bigFiles", "[true|false] flag, force big files flag (only vitalprime), default true", args: 1, required: false
+			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 		}
 		
 		def options = cli.parse(args)
@@ -49,7 +51,11 @@ class VitalExport extends AbstractUtil {
 		
 		Boolean overwrite = Boolean.TRUE.equals(options.ow)
 		
+		Boolean bigFilesForced = options.bf ? Boolean.parseBoolean(options.bf) : null
+		
 		String segment = options.s
+		
+		String profile = options.prof ? options.prof : null
 		
 		Integer blockSize = DEFAULT_BLOCK_SIZE
 		if(options.b) {
@@ -60,9 +66,16 @@ class VitalExport extends AbstractUtil {
 		println "Segment: ${segment}"
 		println "block size: ${blockSize}"
 
+		if(profile != null) {
+			println "Setting custom vital service profile: ${profile}"
+			Factory.setServiceProfile(profile)
+		} else {
+			println "Using default vital service profile..."
+		}
 		
 		VitalService service = Factory.getVitalService()
-		println "Obtained vital service, type: ${service.class.canonicalName}"
+		println "Obtained vital service, type: ${service.getEndpointType()}, customer: ${service.getCustomer().ID}, app: ${service.getApp().ID}"
+		
 		
 		VitalSegment segmentObj = null;
 		for(VitalSegment s : service.listSegments()) {
@@ -81,6 +94,17 @@ class VitalExport extends AbstractUtil {
 		boolean bigFiles = service.getEndpointType() == EndpointType.VITALPRIME
 		
 		println "Big files mode ? ${bigFiles} (service.getEndpointType().getName())"
+		
+		if(bigFiles) {
+			if(bigFilesForced != null) {
+				println "Forced big files setting: ${bigFilesForced}"
+				bigFiles = bigFilesForced.booleanValue()
+			}			
+		} else {
+			if(bigFilesForced != null) {
+				println "WARNING: ignoring bigFiles flag - not a vitalprime endpoint"
+			}
+		}
 		
 		File output = new File(options.o)
 		

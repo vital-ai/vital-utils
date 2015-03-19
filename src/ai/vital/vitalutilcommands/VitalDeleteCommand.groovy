@@ -1,9 +1,11 @@
 package ai.vital.vitalutilcommands
 
+import java.util.Map.Entry
 import org.apache.commons.io.FileUtils;
 
 import ai.vital.endpoint.EndpointType;
 import ai.vital.property.URIProperty
+import ai.vital.query.graphbuilder.GraphQueryBuilder
 import ai.vital.vitalservice.VitalService
 import ai.vital.vitalservice.VitalStatus;
 import ai.vital.vitalservice.factory.Factory
@@ -20,84 +22,182 @@ import ai.vital.vitalservice.query.graph.VitalGraphArcElement
 import ai.vital.vitalservice.query.graph.VitalGraphCriteriaContainer;
 import ai.vital.vitalservice.query.graph.VitalGraphQuery
 import ai.vital.vitalservice.query.graph.VitalGraphQueryPropertyCriterion;
+import ai.vital.vitalservice.query.graph.VitalGraphQueryTypeCriterion
 import ai.vital.vitalservice.query.graph.VitalSelectQuery
 import ai.vital.vitalservice.segment.VitalSegment;
 import ai.vital.vitalsigns.VitalSigns;
 import ai.vital.vitalsigns.datatype.VitalURI;
 import ai.vital.vitalsigns.meta.PathElement
+import ai.vital.vitalsigns.model.GraphMatch;
 import ai.vital.vitalsigns.model.GraphObject;
 
 
 class VitalDeleteCommand extends AbstractUtil {
 
+	static List expandedEndpoints = [EndpointType.VITALPRIME, EndpointType.ALLEGROGRAPH, EndpointType.INDEXDB]
+	
 	public static void main(String[] args) {
 		
-		def cli = new CliBuilder(usage: 'vitalexport [options]')
+		def cli = new CliBuilder(usage: 'vitaldelete [options]')
 		cli.with {
 			h longOpt: "help", "Show usage information", args: 0, required: false
-			q longOpt: "query", "select query file, limit and offet params are ignored! all results are to be deleted", args: 1, required: true
+			q longOpt: "query", "select query file, limit and offet params are ignored! all results are to be deleted, mutually exclusive with segment,  .groovy or .builder", args: 1, required: false
+			s longOpt: "segment", "segment to purge - delete all data in the segment, mutually exlusive with query", args: 1, required: false
 			e longOpt: "expanded", "delete expanded", args: 0, required: false
 			c longOpt: "check", "check the objects list (do not delete)", args: 0, required: false
+			b longOpt: "background", "delete in as background job (vitalprime only)", args: 0, required: false
+			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 		}
 		
 		def options = cli.parse(args)
 		
-		if(!options || options.h) return
+		if(!options || options.h) {
+			cli.usage()
+			return
+		}
+
 		
-		//TODO implement the queries!
-		if(true) {
-			System.err.println "NOT IMPLEMENTED"
-			System.exit(-1)
+		File queryScriptFile = options.q ? new File(options.q) : null;
+		
+		String segment = options.s ? options.s : null
+		
+		if(queryScriptFile != null && segment != null) {
+			error("Query script file and segment params are mutually exclusive");
+			return
+		} else if(queryScriptFile == null && segment == null) {
+			error("Either query script file or segment param must be provided")
+			return
+		}
+		
+		String profile = options.prof ? options.prof : null
+				
+		if(profile != null) {
+			println "Setting custom vital service profile: ${profile}"
+			Factory.setServiceProfile(profile)
+		} else {
+			println "Using default vital service profile..."
 		}
 		VitalService service = Factory.getVitalService()
-		println "Obtained vital service, type: ${EndpointType.VITALPRIME}"
-		
-		if(service.endpointType != EndpointType.VITALPRIME) {
-			error "Only ${EndpointType.VITALPRIME} endpoint type supported"
-		}
+		EndpointType et = service.getEndpointType();
+		println "Obtained vital service, type: ${et}"
 		
 		boolean expanded = options.e ? true : false
 		boolean check = options.c ? true : false
 		
+		boolean background = options.b ? true : false
 		
-		File queryScriptFile = new File(options.q);
-		
-		println "Query file: ${queryScriptFile.absolutePath}"
-		println "Expanded ? ${expanded}"
-		println "Check ? ${check}"
-		
-		if(!queryScriptFile.isFile()) {
-			error "Query script file path does not exist or is not a file"
+
+		if(background && et != EndpointType.VITALPRIME) {
+			error("Background delete operation may only performed in vitalprime endpoint")
 			return
 		}
 		
-		String queryScript = FileUtils.readFileToString(queryScriptFile, "UTF-8")
+		VitalSelectQuery sq = null
 		
-		queryScript =
-		"import ai.vital.vitalservice.query.*;\n" +
-		"import ai.vital.vitalservice.query.VitalQueryContainer.Type;\n" +
-		queryScript;
+		if(queryScriptFile != null) {
+			
+			
+			if(expanded) {
+				
+				if(!expandedEndpoints.contains(et)) {
+					error("Expanded flag may only be used in the following endpoints: ${expandedEndpoints}")
+					return
+				}
+				
+			}
+			
+			println "Query file: ${queryScriptFile?.absolutePath}"
+			if(!queryScriptFile.isFile()) {
+				error "Query script file path does not exist or is not a file"
+				return
+			}
+			
+			Object _query = null
+			
+			if(queryScriptFile.name.endsWith(".groovy")) {
+				
+				println "Parsing groovy query object definition..."
+			
+				String queryScript = FileUtils.readFileToString(queryScriptFile, "UTF-8")
+						
+				queryScript =
+					"import ai.vital.vitalservice.query.graph.*;\n" +
+					queryScript;
+				
+				
+				GroovyShell shell = new GroovyShell();
+				_query = shell.evaluate(queryScript);
+				
+				
+			} else if(queryScriptFile.name.endsWith(".builder")) {
+			
+				String queryScript = FileUtils.readFileToString(queryScriptFile, "UTF-8")
+			
+				GraphQueryBuilder builder = new GraphQueryBuilder()
+			
+				_query = builder.queryString(queryScript).toQuery() 
+				
+			} else {
+				error("Input query file name must end with .groovy or .builder : ${queryScriptFile.absolutePath}")
+				return
+			}
+			
+			if( ! (_query instanceof VitalSelectQuery) ) throw new Exception("A script must return a select query object.");
+			
+			sq = (VitalSelectQuery)_query
 		
+			if( sq.segments == null || sq.segments.isEmpty() ) {
+				error("Query segments list cannot be empty")
+			}
+			
+				
+		}
 		
-		GroovyShell shell = new GroovyShell();
-		Object _query = shell.evaluate(queryScript);
-
-		if( ! (_query instanceof VitalSelectQuery) ) throw new Exception("A script must return a select query variable.");
-		
-		VitalSelectQuery sq = (VitalSelectQuery)_query
-
-		if( sq.segments == null || sq.segments.isEmpty() ) {
-			error("Query segments list cannot be empty")
+		if(segment != null) {
+			println "Segment: ${segment}"
+			VitalSegment found = null
+			for(VitalSegment s : service.listSegments() ) {
+				if(s.id == segment) {
+					found = s
+					break
+				}
+			}
+			
+			if(found == null) {
+				error("Segment not found: ${segment}")
+				return
+			}
 		}
 				
-		if(check) {
+		println "Expanded ? ${expanded}"
+		println "Check ? ${check}"
+		
+
+		if(segment != null) {
+			
+			if(check) {
+				println "Whole segment: ${segment} will be purged, check=true - exiting."
+				return
+			}
+			
+			if(segment != null) {
+				//execute a simple delete that will purge all segment
+				VitalStatus status = service.delete(VitalURI.withString(VitalService.MATCH_ALL_PREFIX + segment))
+				println "status: ${status}"
+				return
+			}
+			
+		}		
+		
+		
+		if(check || et != EndpointType.VITALPRIME) {
 			
 			println "Checking objects list..."
 			
 			int maxresults = 1000
 			int offset = 0
 			
-			int total =0
+			int total = 0
 			
 			Set<String> uris = new HashSet<String>()
 			
@@ -115,7 +215,7 @@ class VitalDeleteCommand extends AbstractUtil {
 				} catch(Exception e) {
 					error e.localizedMessage
 				}
-				if( rl.totalResults < offset + maxresults ) {
+				if( rl.totalResults < offset + maxresults && rl.results.size() > 0 ) {
 					offset += maxresults
 				} else {
 					offset = -1
@@ -130,7 +230,7 @@ class VitalDeleteCommand extends AbstractUtil {
 					
 					uris.add(g.URI)
 					
-					print "${g.class.canonicalName} URI: ${g.URI} "
+					print "${g.getClass().canonicalName} URI: ${g.URI} "
 					
 					if(!expanded) {
 						print "\n\n"
@@ -147,19 +247,26 @@ class VitalDeleteCommand extends AbstractUtil {
 
 					int s = gqRl.results.size()
 
-					for(ResultElement x : gqRl.results) {
-						GraphObject y = x.graphObject
-						uris.add(y.URI)
-						if(y.URI == g.URI) s--
-						
-					}
-					println " [${s} expanded objects]"
+					Set<String> ss = new HashSet<String>()
 					
 					for(ResultElement x : gqRl.results) {
-						GraphObject y = x.graphObject
-						if(y.URI == g.URI) continue
-						println "\t\t${y.class.canonicalName} URI: ${y.URI} "
+						GraphMatch gm = x.graphObject
+						
+						for(Entry<String, Object> e : gm.getOverriddenMap().entrySet()) {
+							
+							URIProperty uri = e.getValue()
+							String u = uri.get()
+							ss.add(u)
+						}
+						
 					}
+					println " [${ss.size()} expanded objects]"
+					
+					for(String u : ss) {
+						println "\t\t${u}"
+					}
+					
+					uris.addAll(ss)
 										
 				}
 				
@@ -169,15 +276,50 @@ class VitalDeleteCommand extends AbstractUtil {
 			println "Total select query results: ${total}"
 			println "URIs to delete: ${uris.size()}"
 			
+			if(check) {
+				println "check complete"
+				return
+			}
+			
+			
+			println "Deleting objects list..."
+			
+			List<VitalURI> urisList = []
+			for(String uri : uris) {
+				urisList.add(VitalURI.withString(uri))
+			}
+			
+			if(urisList.size() < 1) {
+				println "URIs list empty - exiting..."
+				return
+			}
+			
+			VitalStatus status = service.delete(urisList)
+			
+			println "status: ${status}"
+			
 		} else {
+		
 		
 			ResultList rl = null
 			
+			String mainScript = 'commons/scripts/DeleteBatch.groovy'
+			
+			Map params = [selectQuery: sq, expanded: expanded]
+			
+			String toExecute = mainScript
+			if(background) {
+				params['function'] = mainScript
+				toExecute = "commons/scripts/RunJob.groovy"
+			}
+			
 			try {
-				rl = service.callFunction("commons/scripts/RunJob.groovy", [function: 'commons/scripts/DeleteBatch.groovy', selectQuery: sq, expanded: expanded])
+				rl = service.callFunction(toExecute, params)
 				if(rl.status.status != VitalStatus.Status.ok) throw new Exception("Status: ${rl.status}")
-				println "${rl.status}"
-				println "Objects deleted: ${rl.totalResults}"
+				println "status: ${rl.status}"
+				if(!background) {
+					println "Objects deleted: ${rl.totalResults}"
+				}
 			} catch(Exception e) {
 				error e.localizedMessage
 			}
@@ -206,12 +348,12 @@ class VitalDeleteCommand extends AbstractUtil {
 			return null;
 		}
 
-		VitalGraphQuery gq = new VitalGraphQuery(QueryContainerType.and);
+		VitalGraphQuery gq = new VitalGraphQuery();
 		gq.segments = segments
 		
 		//convert paths into query path elements
 		
-		VitalGraphArcContainer topArc = new VitalGraphArcContainer(QueryContainerType.and, new VitalGraphArcElement(Source.CURRENT, Connector.EMPTY, Destination.EMPTY));
+		VitalGraphArcContainer topArc = new VitalGraphArcContainer(QueryContainerType.or, new VitalGraphArcElement(Source.CURRENT, Connector.EMPTY, Destination.EMPTY));
 		VitalGraphCriteriaContainer cc = new VitalGraphCriteriaContainer(QueryContainerType.and)
 		VitalGraphQueryPropertyCriterion rootURICrit = new VitalGraphQueryPropertyCriterion(VitalGraphQueryPropertyCriterion.URI)
 		rootURICrit.symbol = GraphElement.Source
@@ -219,9 +361,57 @@ class VitalDeleteCommand extends AbstractUtil {
 		cc.add(rootURICrit)
 		topArc.add(cc)
 		
+		gq.setTopContainer(topArc)
+		
 		VitalGraphArcContainer parent = topArc 
 		
+		
 		for(List<PathElement> path : paths) {
+			
+			VitalGraphArcContainer currentParent = parent
+			
+			PathElement previousEl = null
+			
+			for(PathElement el : path) {
+				
+				Source src = null
+				
+				if(el.reversed) {
+					src = Source.CURRENT
+				} else if(previousEl == null) {
+					src = Source.PARENT_SOURCE
+				} else {
+					src = previousEl.reversed ? Source.PARENT_SOURCE : Source.PARENT_DESTINATION
+				}
+				
+				Destination dest = null
+				
+				if(el.reversed) {
+					if(previousEl == null) {
+						dest = Destination.PARENT_SOURCE
+					} else {
+						dest = previousEl.reversed ? Destination.PARENT_SOURCE : Destination.PARENT_DESTINATION 
+					}
+				} else {
+					dest = Destination.CURRENT
+				}
+				
+				
+				VitalGraphArcContainer newContainer = new VitalGraphArcContainer(QueryContainerType.and, new VitalGraphArcElement(src, Connector.EDGE, dest));
+				
+				VitalGraphCriteriaContainer subCC = new VitalGraphCriteriaContainer(QueryContainerType.and)
+				
+				subCC.add(new VitalGraphQueryTypeCriterion(GraphElement.Connector, el.edgeClass));
+				//set edge type
+				newContainer.add(subCC)
+				
+				currentParent.add(newContainer)
+				
+				currentParent = newContainer
+			
+				previousEl = el
+			}
+			
 			
 			
 			/*
@@ -241,7 +431,7 @@ class VitalDeleteCommand extends AbstractUtil {
 		
 		cache.put(cls, paths)
 		
-		return paths
+		return gq
 		
 	}
 }
