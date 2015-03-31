@@ -74,7 +74,7 @@ class VitalExport extends AbstractUtil {
 		}
 		
 		VitalService service = Factory.getVitalService()
-		println "Obtained vital service, type: ${service.getEndpointType()}, customer: ${service.getCustomer().ID}, app: ${service.getApp().ID}"
+		println "Obtained vital service, type: ${service.getEndpointType()}, organization: ${service.getOrganization().ID}, app: ${service.getApp().ID}"
 		
 		
 		VitalSegment segmentObj = null;
