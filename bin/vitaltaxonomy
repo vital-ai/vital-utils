@@ -47,10 +47,14 @@ new File(vitalhome, "vital-lucene").eachFileRecurse(FILES) {
   }
 }
 
-new File(vitalhome, "vital-dynamodb").eachFileRecurse(FILES) {
-  if(it.name.endsWith(".jar")) {
-    jars.add(it.absolutePath)
+if( new File(vitalhome, "vital-dynamodb").exists() ) {
+
+  new File(vitalhome, "vital-dynamodb").eachFileRecurse(FILES) {
+    if(it.name.endsWith(".jar")) {
+      jars.add(it.absolutePath)
+    }
   }
+  
 }
 
 File tripleStoreMod = new File(vitalhome, 'vital-triplestore')
