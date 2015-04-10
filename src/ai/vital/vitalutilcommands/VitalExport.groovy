@@ -208,7 +208,7 @@ class VitalExport extends AbstractUtil {
 			
 				sq.offset = offset
 				
-				ResultList rl = service.selectQuery(sq)
+				ResultList rl = service.query(sq)
 				
 				if(total < 0) total = rl.totalResults != null ? rl.totalResults.intValue() : 0
 				

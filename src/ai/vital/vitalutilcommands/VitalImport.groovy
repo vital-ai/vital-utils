@@ -3,7 +3,7 @@ package ai.vital.vitalutilcommands
 import org.apache.commons.io.IOUtils;
 
 import ai.vital.endpoint.EndpointType;
-import ai.vital.vitalsigns.datatype.VitalURI;
+import ai.vital.property.URIProperty;
 import ai.vital.vitalsigns.model.GraphObject
 import ai.vital.vitalsigns.model.VITAL_Node;
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer
@@ -181,7 +181,7 @@ class VitalImport extends AbstractUtil {
 				try {
 					bis = new BufferedInputStream(new FileInputStream(f))
 					
-					VitalStatus status = service.uploadFile(VitalURI.withString(VitalFtpCommand.FTP_URI), f.name, bis, true)
+					VitalStatus status = service.uploadFile(URIProperty.withString(VitalFtpCommand.FTP_URI), f.name, bis, true)
 					
 					if(status.status != VitalStatus.Status.ok) {
 						error ("Error status: ${status}")
@@ -405,7 +405,7 @@ class VitalImport extends AbstractUtil {
 		}
 		
 		if(gos.size() > 0) {
-			service.save(segment, gos)
+			service.save(segment, gos, true)
 		}
 			
 	}

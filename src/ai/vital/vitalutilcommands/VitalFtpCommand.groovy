@@ -5,12 +5,12 @@ import java.util.Map.Entry
 import org.apache.commons.io.IOUtils;
 
 import ai.vital.endpoint.EndpointType;
+import ai.vital.property.URIProperty;
 import ai.vital.vitalservice.VitalService;
 import ai.vital.vitalservice.VitalStatus;
 import ai.vital.vitalservice.factory.Factory;
 import ai.vital.vitalservice.query.ResultElement;
 import ai.vital.vitalservice.query.ResultList;
-import ai.vital.vitalsigns.datatype.VitalURI;
 import ai.vital.vitalsigns.model.VITAL_Node;
 
 class VitalFtpCommand extends AbstractUtil {
@@ -187,7 +187,7 @@ class VitalFtpCommand extends AbstractUtil {
 			BufferedOutputStream fos = null
 			try {
 				fos = new BufferedOutputStream(new FileOutputStream(targetFile))
-				VitalStatus status = service.downloadFile(VitalURI.withString(FTP_URI), n, fos, true)
+				VitalStatus status = service.downloadFile(URIProperty.withString(FTP_URI), n, fos, true)
 				println "download status: ${status}"
 			} catch(Exception e) {
 				error e.localizedMessage
@@ -224,7 +224,7 @@ class VitalFtpCommand extends AbstractUtil {
 				
 				inputStream = new BufferedInputStream(new FileInputStream(srcFile))
 				
-				VitalStatus status = service.uploadFile(VitalURI.withString(FTP_URI), n, inputStream, overwrite)
+				VitalStatus status = service.uploadFile(URIProperty.withString(FTP_URI), n, inputStream, overwrite)
 				println "Status: ${status}"
 			} catch(Exception e) {
 				error e.localizedMessage
@@ -246,7 +246,7 @@ class VitalFtpCommand extends AbstractUtil {
 			}
 		
 			try {
-				VitalStatus status = service.deleteFile(VitalURI.withString(FTP_URI), n)
+				VitalStatus status = service.deleteFile(URIProperty.withString(FTP_URI), n)
 				println "Status: ${status}"
 			} catch(Exception e) {
 				error e.localizedMessage

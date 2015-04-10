@@ -11,15 +11,16 @@ import ai.vital.vitalservice.query.ResultElement;
 import ai.vital.vitalservice.query.ResultList;
 import ai.vital.vitalservice.query.graph.VitalExportQuery;
 import ai.vital.vitalservice.query.graph.VitalGraphQuery
+import ai.vital.vitalservice.query.graph.VitalPathQuery;
 import ai.vital.vitalservice.query.graph.VitalSelectAggregationQuery;
 import ai.vital.vitalservice.query.graph.VitalSelectQuery
+import ai.vital.vitalservice.query.graph.VitalSparqlQuery;
 import ai.vital.vitalsigns.VitalSigns;
 import ai.vital.vitalsigns.meta.GraphContext;
 import ai.vital.vitalsigns.model.AggregationResult;
 import ai.vital.vitalsigns.model.GraphMatch;
 import ai.vital.vitalsigns.model.GraphObject;
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer;
-import ai.vital.vitalsigns.datatype.VitalURI
 
 import java.util.Map.Entry
 
@@ -133,7 +134,7 @@ class VitalQuery extends AbstractUtil {
 			println "Default service profile"
 		}
 
-		VitalGraphQuery queryObject = null
+		ai.vital.vitalservice.query.graph.VitalQuery queryObject = null
 
 		VitalSigns.get()
 
@@ -175,6 +176,12 @@ class VitalQuery extends AbstractUtil {
 
 		boolean selectQuery = queryObject instanceof VitalSelectQuery
 
+		boolean pathQuery = queryObject instanceof VitalPathQuery
+		
+		boolean graphQuery = queryObject instanceof VitalGraphQuery
+		
+		boolean sparqlQuery = queryObject instanceof VitalSparqlQuery
+		
 		boolean aggregationQuery = false 
 		boolean selectDistinctQuery = false
 		if(selectQuery) {
@@ -197,12 +204,29 @@ class VitalQuery extends AbstractUtil {
 					}
 				}
 			}
-		} else {
+		} else if(graphQuery) {
 			println "Graph Query ...";
 			if(!outputSparql && output != null && !blockOutput) {
 				error("Graph query output file must be a .vital[.gz] file")
 				return
 			}
+		} else if(pathQuery) {
+			println "Path Query ..."
+			
+			if(outputSparql) {
+				error("Path query does not use sparql query")
+				return
+			}
+			
+			if(!blockOutput) {
+				error("Path query output file must be a .vital[.gz] file")
+				return
+			}
+		} else if(sparqlQuery) {
+			error("Sparql query type not supported")
+		} else {
+			error("Unhandled query type: ${queryObject?.class.simpleName}")
+			return
 		}
 
 		if(outputSparql) {
@@ -216,12 +240,10 @@ class VitalQuery extends AbstractUtil {
 
 		ResultList rl = null;
 
-		if(queryObject instanceof VitalSelectQuery) {
+		if(queryObject instanceof VitalSelectQuery || queryObject instanceof VitalGraphQuery || queryObject instanceof VitalPathQuery ) {
 
-			rl = service.selectQuery(queryObject)
-		} else if(queryObject instanceof VitalGraphQuery) {
-
-			rl = service.graphQuery(queryObject)
+			rl = service.query(queryObject)
+		
 		} else {
 			error "Unexpected query object: ${queryObject.class.canonicalName}"
 			return
@@ -308,7 +330,7 @@ class VitalQuery extends AbstractUtil {
 		}
 		
 		Set<String> uris = new HashSet<String>()
-		List<VitalURI> urisList = []
+		List<URIProperty> urisList = []
 
 		Map<String, Set<String>> mainObject2Block = new LinkedHashMap<String, Set<String>>();
 
@@ -316,7 +338,7 @@ class VitalQuery extends AbstractUtil {
 		List<GraphObject> objects = []
 		Map<String, GraphObject> mapped = [:]
 
-		if(selectQuery) {
+		if(selectQuery || pathQuery) {
 
 			for(GraphObject g : rl) {
 
@@ -324,15 +346,6 @@ class VitalQuery extends AbstractUtil {
 			}
 		} else {
 			for(GraphMatch gm : rl) {
-
-				/*
-				 def graphURIs = gm.graphURIs
-				 for(IProperty uri : graphURIs) {
-				 String u = uri.toString()
-				 if(uris.add(u)) {
-				 urisList.add(VitalURI.withString(u))
-				 }
-				 }*/
 
 				Set<String> groupURIs = null
 				String mainObjectURI = null
@@ -349,12 +362,12 @@ class VitalQuery extends AbstractUtil {
 					}
 				}
 
-				for(Entry<String, Object> e : gm.getOverriddenMap().entrySet()) {
+				for(Entry<String, Object> e : gm.getPropertiesMap().entrySet()) {
 
 					URIProperty uri = e.getValue()
 					String u = uri.get()
 					if(uris.add(u)) {
-						urisList.add(VitalURI.withString(u))
+						urisList.add(URIProperty.withString(u))
 					}
 
 					if(group) {
@@ -368,7 +381,7 @@ class VitalQuery extends AbstractUtil {
 			println "Resolving ${uris.size()} URIs ..."
 
 			if(uris.size() > 0) {
-				objects = service.get(urisList, GraphContext.ServiceWide, [])
+				objects = service.get(GraphContext.ServiceWide, urisList)
 				for(GraphObject g : objects) {
 					mapped.put(g.URI, g)
 				}
@@ -378,7 +391,7 @@ class VitalQuery extends AbstractUtil {
 
 		int i = 0
 
-		if(selectQuery) {
+		if(selectQuery || pathQuery) {
 		
 			for(GraphObject g : objects) {
 				

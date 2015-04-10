@@ -9,7 +9,6 @@ import ai.vital.query.graphbuilder.GraphQueryBuilder
 import ai.vital.vitalservice.VitalService
 import ai.vital.vitalservice.VitalStatus;
 import ai.vital.vitalservice.factory.Factory
-import ai.vital.vitalservice.query.QueryPathElement;
 import ai.vital.vitalservice.query.ResultElement;
 import ai.vital.vitalservice.query.ResultList;
 import ai.vital.vitalservice.query.graph.Connector;
@@ -26,7 +25,6 @@ import ai.vital.vitalservice.query.graph.VitalGraphQueryTypeCriterion
 import ai.vital.vitalservice.query.graph.VitalSelectQuery
 import ai.vital.vitalservice.segment.VitalSegment;
 import ai.vital.vitalsigns.VitalSigns;
-import ai.vital.vitalsigns.datatype.VitalURI;
 import ai.vital.vitalsigns.meta.PathElement
 import ai.vital.vitalsigns.model.GraphMatch;
 import ai.vital.vitalsigns.model.GraphObject;
@@ -182,7 +180,7 @@ class VitalDeleteCommand extends AbstractUtil {
 			
 			if(segment != null) {
 				//execute a simple delete that will purge all segment
-				VitalStatus status = service.delete(VitalURI.withString(VitalService.MATCH_ALL_PREFIX + segment))
+				VitalStatus status = service.delete(URIProperty.withString(VitalService.MATCH_ALL_PREFIX + segment))
 				println "status: ${status}"
 				return
 			}
@@ -208,7 +206,7 @@ class VitalDeleteCommand extends AbstractUtil {
 				
 				ResultList rl = null
 				try {
-					rl = service.selectQuery(sq)
+					rl = service.query(sq)
 					if(rl.status.status != VitalStatus.Status.ok) {
 						throw new Exception("Query status: ${rl.status}")
 					}
@@ -243,7 +241,7 @@ class VitalDeleteCommand extends AbstractUtil {
 					
 					if(gq == null) continue;
 					
-					ResultList gqRl = service.graphQuery(gq)					
+					ResultList gqRl = service.query(gq)					
 
 					int s = gqRl.results.size()
 
@@ -252,7 +250,7 @@ class VitalDeleteCommand extends AbstractUtil {
 					for(ResultElement x : gqRl.results) {
 						GraphMatch gm = x.graphObject
 						
-						for(Entry<String, Object> e : gm.getOverriddenMap().entrySet()) {
+						for(Entry<String, Object> e : gm.getPropertiesMap().entrySet()) {
 							
 							URIProperty uri = e.getValue()
 							String u = uri.get()
@@ -284,9 +282,9 @@ class VitalDeleteCommand extends AbstractUtil {
 			
 			println "Deleting objects list..."
 			
-			List<VitalURI> urisList = []
+			List<URIProperty> urisList = []
 			for(String uri : uris) {
-				urisList.add(VitalURI.withString(uri))
+				urisList.add(URIProperty.withString(uri))
 			}
 			
 			if(urisList.size() < 1) {
