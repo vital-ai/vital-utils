@@ -79,7 +79,7 @@ class VitalExport extends AbstractUtil {
 		
 		VitalSegment segmentObj = null;
 		for(VitalSegment s : service.listSegments()) {
-			if(s.id== segment) {
+			if(s.ID== segment) {
 				segmentObj = s
 				break
 			}

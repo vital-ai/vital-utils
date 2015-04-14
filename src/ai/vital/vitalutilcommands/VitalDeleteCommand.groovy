@@ -155,7 +155,7 @@ class VitalDeleteCommand extends AbstractUtil {
 			println "Segment: ${segment}"
 			VitalSegment found = null
 			for(VitalSegment s : service.listSegments() ) {
-				if(s.id == segment) {
+				if(s.ID == segment) {
 					found = s
 					break
 				}
