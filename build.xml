@@ -5,10 +5,29 @@
 	<property name="VITAL_HOME" value="${env.VITAL_HOME}" />
 	<echo message="VITAL_HOME: ${VITAL_HOME}" />
 	
-	<property name="utils.dist.jar" value="dist/vitalutilscommand-0.2.0.jar" />
+	<property name="dist.version" value="0.2.0" />
+		
+	<property name="utils.dist.jar" value="dist/vitalutilscommand-${dist.version}.jar" />
 
 	<property name="utils.build.dir" value="build_utils" />
+	
+	<property name="utils.build.javadoc" value="${basedir}/build_javadoc" />
 
+	<property name="utils.dist.javadoc" value="dist/vitalutilscommand-${dist.version}-javadoc.jar" />
+	
+	
+	<property name="module.dir" value="${basedir}/dist-module" />
+		
+	<property name="dist.zip" value="${module.dir}/vital-utils-${dist.version}.zip" />
+	
+	<property name="dist.tar.gz" value="${module.dir}/vital-utils-${dist.version}.tar.gz" />
+	
+	<property name="dist.javadocs.zip" value="${module.dir}/vital-utils-${dist.version}-javadocs.zip" />
+	
+	<property name="dist.readme" value="${module.dir}/vital-utils-${dist.version}-readme.txt" />
+	
+	<property name="prefix" value="vitalutil" />
+	
 	
 	<path id="classpath">
 		<fileset dir="lib">
@@ -30,7 +49,25 @@
 		classpathref="classpath" />
 	
 	
-	<target name="main">
+	<taskdef name="groovydoc" classname="org.codehaus.groovy.ant.Groovydoc" classpathref="classpath" />
+	
+	<target name="javadoc">
+		
+		
+		<delete file="${utils.dist.javadoc}" />
+		<delete dir="${utils.build.javadoc}"/>
+		
+		<groovydoc author="true" destdir="${utils.build.javadoc}" windowtitle="vital-utils" sourcepath="src">
+		
+		</groovydoc>
+		
+		<jar destfile="${utils.dist.javadoc}" basedir="${utils.build.javadoc}"></jar>
+		
+		<delete dir="${utils.build.javadoc}"/>
+		
+	</target>
+	
+	<target name="main" depends="javadoc">
 		
 		<mkdir dir="${basedir}/dist" />
 		
@@ -55,7 +92,49 @@
 		
 		<jar destfile="${utils.dist.jar}" basedir="${utils.build.dir}" compress="true"></jar>
 		
+		
+		
 		<delete dir="${utils.build.dir}" />
+		
+	</target>
+	
+	<!-- for module distribution build-->
+	<target name="dist-module" depends="main">
+		
+		<mkdir dir="${module.dir}" />
+		
+		<delete file="${dist.zip}" />
+		<delete file="${dist.tar.gz}" />
+		<delete file="${dist.javadocs.zip}" />
+		
+		
+		<tar destfile="${dist.tar.gz}" compression="gzip" defaultexcludes="true">
+			<tarfileset dir="${basedir}" filemode="755" defaultexcludes="true" prefix="${prefix}">
+				<include name="bin/**" />
+			</tarfileset>
+		    <tarfileset dir="${basedir}" defaultexcludes="true" prefix="${prefix}">
+				<include name="lib/**" />
+       		</tarfileset>
+			<tarfileset dir="${basedir}/dist" prefix="${prefix}/command">
+				<include name="vitalutilscommand-${dist.version}.jar" />
+			</tarfileset>
+       	</tar>
+		
+    	<zip destfile="${dist.zip}" compress="true" defaultexcludes="true">
+    		<zipfileset dir="${basedir}" filemode="755" defaultexcludes="true" prefix="${prefix}">
+                <include name="bin/**"/>
+    		</zipfileset>
+    		<zipfileset dir="${basedir}" defaultexcludes="false" prefix="${prefix}">
+				<include name="lib/**" />
+    		</zipfileset>
+			<zipfileset dir="${basedir}/dist" prefix="${prefix}/command">
+				<include name="vitalutilscommand-${dist.version}.jar" />
+			</zipfileset>    		
+    	</zip>
+		
+		<copy file="${utils.dist.javadoc}" tofile="${dist.javadocs.zip}" />
+		
+		<copy file="${basedir}/README.md" tofile="${dist.readme}" />
 		
 	</target>
 	
