@@ -12,15 +12,23 @@ def vitalhome = System.getenv('VITAL_HOME')
 // compare location of script with vital home to help detect if wrong directory set
 
 
-def homeDir = vitalhome + "/" + "vital-utils" + "/"
+def homeDir = vitalhome + "/" + "vitalutil" + "/"
 
 def mainClass = 'ai.vital.utils.VitalDiagramCommand'
 
-List jars = [
-	vitalhome  + '/vitalsigns/command/VitalSigns-0.2.0.jar',
-	homeDir + 'command/vitalutilscommand-0.2.0.jar'
-]
+List jars = []
 
+new File(vitalhome, "vitalsigns/command").eachFileRecurse(FILES) {
+  if(it.name.endsWith(".jar")) {
+    jars.add(it.absolutePath)
+  }
+}
+
+new File(homeDir + 'command").eachFileRecurse(FILES) {
+  if(it.name.endsWith(".jar")) {
+    jars.add(it.absolutePath)
+  }
+}
 
 new File(vitalhome, 'vital-domain').eachFile(FILES){
   if(it.name.endsWith(".jar")) {

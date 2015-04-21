@@ -16,10 +16,19 @@ def homeDir = vitalhome + "/" + "vitalutil" + "/"
 
 def mainClass = 'ai.vital.vitalutilcommands.VitalQuery'
 
-List jars = [
-	vitalhome  + '/vitalsigns/command/VitalSigns-0.2.0.jar',
-	homeDir + 'command/vitalutilscommand-0.2.0.jar'
-]
+List jars = []
+
+new File(vitalhome, "vitalsigns/command").eachFileRecurse(FILES) {
+  if(it.name.endsWith(".jar")) {
+    jars.add(it.absolutePath)
+  }
+}
+
+new File(homeDir + 'command").eachFileRecurse(FILES) {
+  if(it.name.endsWith(".jar")) {
+    jars.add(it.absolutePath)
+  }
+}
 
 
 new File(vitalhome, 'vital-domain').eachFile(FILES){
