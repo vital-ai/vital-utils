@@ -24,7 +24,7 @@ new File(vitalhome, "vitalsigns/command").eachFileRecurse(FILES) {
   }
 }
 
-new File(homeDir + 'command").eachFileRecurse(FILES) {
+new File(homeDir, 'command').eachFileRecurse(FILES) {
   if(it.name.endsWith(".jar")) {
     jars.add(it.absolutePath)
   }
