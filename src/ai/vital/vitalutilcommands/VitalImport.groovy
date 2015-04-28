@@ -12,7 +12,7 @@ import ai.vital.vitalsigns.block.BlockCompactStringSerializer.VitalBlock
 import ai.vital.vitalsigns.rdf.VitalNTripleIterator
 import ai.vital.vitalservice.VitalService;
 import ai.vital.vitalservice.VitalStatus
-import ai.vital.vitalservice.factory.Factory
+import ai.vital.vitalservice.factory.VitalServiceFactory
 import ai.vital.vitalservice.query.ResultList;
 import ai.vital.vitalservice.segment.VitalSegment;
 
@@ -115,12 +115,12 @@ class VitalImport extends AbstractUtil {
 		String profile = options.prof ? options.prof : null
 		if(profile != null) {
 			println "Setting custom vital service profile: ${profile}"
-			Factory.setServiceProfile(profile)
+			VitalServiceFactory.setServiceProfile(profile)
 		} else {
 			println "Using default vital service profile..."
 		}
 		
-		VitalService service = Factory.getVitalService()
+		VitalService service = VitalServiceFactory.getVitalService()
 		println "Obtained vital service, type: ${service.getEndpointType()}"
 		
 		VitalSegment segmentObj = null;

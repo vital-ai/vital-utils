@@ -3,18 +3,18 @@ package ai.vital.vitalutilcommands
 import ai.vital.property.BooleanProperty;
 import ai.vital.property.IProperty
 import ai.vital.property.URIProperty;
-import ai.vital.query.graphbuilder.GraphQueryBuilder;
+import ai.vital.query.querybuilder.VitalBuilder;
 import ai.vital.vitalservice.VitalService
 import ai.vital.vitalservice.VitalStatus;
-import ai.vital.vitalservice.factory.Factory;
+import ai.vital.vitalservice.factory.VitalServiceFactory;
 import ai.vital.vitalservice.query.ResultElement;
 import ai.vital.vitalservice.query.ResultList;
-import ai.vital.vitalservice.query.graph.VitalExportQuery;
-import ai.vital.vitalservice.query.graph.VitalGraphQuery
-import ai.vital.vitalservice.query.graph.VitalPathQuery;
-import ai.vital.vitalservice.query.graph.VitalSelectAggregationQuery;
-import ai.vital.vitalservice.query.graph.VitalSelectQuery
-import ai.vital.vitalservice.query.graph.VitalSparqlQuery;
+import ai.vital.vitalservice.query.VitalExportQuery;
+import ai.vital.vitalservice.query.VitalGraphQuery
+import ai.vital.vitalservice.query.VitalPathQuery;
+import ai.vital.vitalservice.query.VitalSelectAggregationQuery;
+import ai.vital.vitalservice.query.VitalSelectQuery
+import ai.vital.vitalservice.query.VitalSparqlQuery;
 import ai.vital.vitalsigns.VitalSigns;
 import ai.vital.vitalsigns.meta.GraphContext;
 import ai.vital.vitalsigns.model.AggregationResult;
@@ -129,12 +129,12 @@ class VitalQuery extends AbstractUtil {
 
 		if(serviceProfile != null) {
 			println "Setting service profile: ${serviceProfile}"
-			Factory.setServiceProfile(serviceProfile)
+			VitalServiceFactory.setServiceProfile(serviceProfile)
 		} else {
 			println "Default service profile"
 		}
 
-		ai.vital.vitalservice.query.graph.VitalQuery queryObject = null
+		ai.vital.vitalservice.query.VitalQuery queryObject = null
 
 		VitalSigns.get()
 
@@ -152,7 +152,7 @@ class VitalQuery extends AbstractUtil {
 			GroovyShell shell = new GroovyShell();
 			Object _query = shell.evaluate(queryScript);
 
-			if(!(_query instanceof ai.vital.vitalservice.query.graph.VitalQuery)) {
+			if(!(_query instanceof ai.vital.vitalservice.query.VitalQuery)) {
 				error("A script must return a select or a graph query variable.")
 				return
 			}
@@ -164,7 +164,7 @@ class VitalQuery extends AbstractUtil {
 
 			String queryScript = FileUtils.readFileToString(queryScriptFile, "UTF-8")
 
-			GraphQueryBuilder builder = new GraphQueryBuilder()
+			VitalBuilder builder = new VitalBuilder()
 
 			queryObject = builder.queryString(queryScript).toQuery()
 		}
@@ -235,7 +235,7 @@ class VitalQuery extends AbstractUtil {
 			queryObject.returnSparqlString = false
 		}
 
-		VitalService service = Factory.getVitalService()
+		VitalService service = VitalServiceFactory.getVitalService()
 		println "Obtained vital service, type: ${service.endpointType}"
 
 		ResultList rl = null;

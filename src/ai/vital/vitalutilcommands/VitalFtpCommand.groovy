@@ -8,7 +8,7 @@ import ai.vital.endpoint.EndpointType;
 import ai.vital.property.URIProperty;
 import ai.vital.vitalservice.VitalService;
 import ai.vital.vitalservice.VitalStatus;
-import ai.vital.vitalservice.factory.Factory;
+import ai.vital.vitalservice.factory.VitalServiceFactory;
 import ai.vital.vitalservice.query.ResultElement;
 import ai.vital.vitalservice.query.ResultList;
 import ai.vital.vitalsigns.model.VITAL_Node;
@@ -118,12 +118,12 @@ class VitalFtpCommand extends AbstractUtil {
 
 		if(profile != null) {
 			println "Setting custom vital service profile: ${profile}"
-			Factory.setServiceProfile(profile)
+			VitalServiceFactory.setServiceProfile(profile)
 		} else {
 			println "Using default vital service profile..."
 		}
 		
-		VitalService service = Factory.getVitalService()
+		VitalService service = VitalServiceFactory.getVitalService()
 		
 		if(service.getEndpointType() != EndpointType.VITALPRIME) {
 			error "${VF} only works with vitalprime"

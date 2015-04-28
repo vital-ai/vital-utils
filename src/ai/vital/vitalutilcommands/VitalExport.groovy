@@ -3,10 +3,10 @@ package ai.vital.vitalutilcommands
 import ai.vital.endpoint.EndpointType;
 import ai.vital.vitalservice.VitalService
 import ai.vital.vitalservice.VitalStatus
-import ai.vital.vitalservice.factory.Factory;
+import ai.vital.vitalservice.factory.VitalServiceFactory;
 import ai.vital.vitalservice.query.ResultElement;
 import ai.vital.vitalservice.query.ResultList;
-import ai.vital.vitalservice.query.graph.VitalExportQuery
+import ai.vital.vitalservice.query.VitalExportQuery
 import ai.vital.vitalservice.segment.VitalSegment
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer
 import ai.vital.vitalsigns.model.GraphObject;
@@ -68,12 +68,12 @@ class VitalExport extends AbstractUtil {
 
 		if(profile != null) {
 			println "Setting custom vital service profile: ${profile}"
-			Factory.setServiceProfile(profile)
+			VitalServiceFactory.setServiceProfile(profile)
 		} else {
 			println "Using default vital service profile..."
 		}
 		
-		VitalService service = Factory.getVitalService()
+		VitalService service = VitalServiceFactory.getVitalService()
 		println "Obtained vital service, type: ${service.getEndpointType()}, organization: ${service.getOrganization().ID}, app: ${service.getApp().ID}"
 		
 		

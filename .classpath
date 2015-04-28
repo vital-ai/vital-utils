@@ -9,8 +9,6 @@
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/command/VitalSigns-0.2.250.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalservice/VitalService-0.2.250.jar"/>
 	<classpathentry kind="lib" path="lib/javacsv-2.1/javacsv-2.1.jar"/>
-	<classpathentry kind="lib" path="lib/owlhtml/owlhtml.jar"/>
-	<classpathentry kind="lib" path="lib/owlmanager/owlmanager.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/groovy-2.4.0/groovy-all-2.4.0.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/commons-cli-1.2.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/commons-codec-1.5.jar"/>

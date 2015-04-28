@@ -5,24 +5,24 @@ import org.apache.commons.io.FileUtils;
 
 import ai.vital.endpoint.EndpointType;
 import ai.vital.property.URIProperty
-import ai.vital.query.graphbuilder.GraphQueryBuilder
+import ai.vital.query.querybuilder.VitalBuilder
 import ai.vital.vitalservice.VitalService
 import ai.vital.vitalservice.VitalStatus;
-import ai.vital.vitalservice.factory.Factory
+import ai.vital.vitalservice.factory.VitalServiceFactory
 import ai.vital.vitalservice.query.ResultElement;
 import ai.vital.vitalservice.query.ResultList;
-import ai.vital.vitalservice.query.graph.Connector;
-import ai.vital.vitalservice.query.graph.Destination;
-import ai.vital.vitalservice.query.graph.GraphElement;
-import ai.vital.vitalservice.query.graph.QueryContainerType;
-import ai.vital.vitalservice.query.graph.Source;
-import ai.vital.vitalservice.query.graph.VitalGraphArcContainer;
-import ai.vital.vitalservice.query.graph.VitalGraphArcElement
-import ai.vital.vitalservice.query.graph.VitalGraphCriteriaContainer;
-import ai.vital.vitalservice.query.graph.VitalGraphQuery
-import ai.vital.vitalservice.query.graph.VitalGraphQueryPropertyCriterion;
-import ai.vital.vitalservice.query.graph.VitalGraphQueryTypeCriterion
-import ai.vital.vitalservice.query.graph.VitalSelectQuery
+import ai.vital.vitalservice.query.Connector;
+import ai.vital.vitalservice.query.Destination;
+import ai.vital.vitalservice.query.GraphElement;
+import ai.vital.vitalservice.query.QueryContainerType;
+import ai.vital.vitalservice.query.Source;
+import ai.vital.vitalservice.query.VitalGraphArcContainer;
+import ai.vital.vitalservice.query.VitalGraphArcElement
+import ai.vital.vitalservice.query.VitalGraphCriteriaContainer;
+import ai.vital.vitalservice.query.VitalGraphQuery
+import ai.vital.vitalservice.query.VitalGraphQueryPropertyCriterion;
+import ai.vital.vitalservice.query.VitalGraphQueryTypeCriterion
+import ai.vital.vitalservice.query.VitalSelectQuery
 import ai.vital.vitalservice.segment.VitalSegment;
 import ai.vital.vitalsigns.VitalSigns;
 import ai.vital.vitalsigns.meta.PathElement
@@ -71,11 +71,11 @@ class VitalDeleteCommand extends AbstractUtil {
 				
 		if(profile != null) {
 			println "Setting custom vital service profile: ${profile}"
-			Factory.setServiceProfile(profile)
+			VitalServiceFactory.setServiceProfile(profile)
 		} else {
 			println "Using default vital service profile..."
 		}
-		VitalService service = Factory.getVitalService()
+		VitalService service = VitalServiceFactory.getVitalService()
 		EndpointType et = service.getEndpointType();
 		println "Obtained vital service, type: ${et}"
 		
@@ -131,7 +131,7 @@ class VitalDeleteCommand extends AbstractUtil {
 			
 				String queryScript = FileUtils.readFileToString(queryScriptFile, "UTF-8")
 			
-				GraphQueryBuilder builder = new GraphQueryBuilder()
+				VitalBuilder builder = new VitalBuilder()
 			
 				_query = builder.queryString(queryScript).toQuery() 
 				
