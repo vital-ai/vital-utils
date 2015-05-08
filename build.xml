@@ -5,7 +5,7 @@
 	<property name="VITAL_HOME" value="${env.VITAL_HOME}" />
 	<echo message="VITAL_HOME: ${VITAL_HOME}" />
 	
-	<property name="dist.version" value="0.2.250" />
+	<property name="dist.version" value="0.2.251" />
 		
 	<property name="utils.dist.jar" value="dist/vitalutilscommand-${dist.version}.jar" />
 
