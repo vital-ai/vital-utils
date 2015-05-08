@@ -137,7 +137,7 @@ class VitalGrep {
 		
 		if(type != null) {
 			
-			if( type == VitalSigns.get().getRDFClass(go.getClass()) ) {
+			if( type == VitalSigns.get().getClassesRegistry().getClassURI(go.getClass()) ) {
 			
 				if(property_name != null) {
 						

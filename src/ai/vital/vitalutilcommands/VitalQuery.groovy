@@ -350,7 +350,7 @@ class VitalQuery extends AbstractUtil {
 				Set<String> groupURIs = null
 				String mainObjectURI = null
 				if(group) {
-					URIProperty mainURIProp = gm[mainProperty]
+					URIProperty mainURIProp = gm[mainProperty].unwrapped()
 					if( mainURIProp == null ) error("No bound variable in graph match: ${mainProperty}, make sure the query binds to it")
 					mainObjectURI = mainURIProp.get()
 
@@ -364,7 +364,11 @@ class VitalQuery extends AbstractUtil {
 
 				for(Entry<String, Object> e : gm.getPropertiesMap().entrySet()) {
 
-					URIProperty uri = e.getValue()
+					def un = e.getValue().unwrapped()
+					
+					if(!(un instanceof URIProperty)) continue
+					
+					URIProperty uri = un
 					String u = uri.get()
 					if(uris.add(u)) {
 						urisList.add(URIProperty.withString(u))
@@ -381,8 +385,9 @@ class VitalQuery extends AbstractUtil {
 			println "Resolving ${uris.size()} URIs ..."
 
 			if(uris.size() > 0) {
-				objects = service.get(GraphContext.ServiceWide, urisList)
-				for(GraphObject g : objects) {
+				ResultList r = service.get(GraphContext.ServiceWide, urisList)
+				for(GraphObject g : r) {
+					objects.add(g)
 					mapped.put(g.URI, g)
 				}
 			}

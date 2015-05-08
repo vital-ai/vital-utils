@@ -410,21 +410,6 @@ class VitalDeleteCommand extends AbstractUtil {
 				previousEl = el
 			}
 			
-			
-			
-			/*
-			
-			List<QueryPathElement> qpath = new ArrayList<QueryPathElement>(path.size());
-			
-			for(PathElement pe : path) {
-				Class edgeClass = VitalSigns.get().getGroovyClass(pe.edgeTypeURI);
-				if(edgeClass == null) throw new RuntimeException("No edge class found: ${pe.edgeTypeURI}")
-				QueryPathElement qpe = new QueryPathElement(edgeClass, null, pe.reversed ? QueryPathElement.Direction.forward : QueryPathElement.Direction.reverse, QueryPathElement.CollectEdges.yes, QueryPathElement.CollectDestObjects.yes);
-				qpath.add(qpe);
-			}
-			
-			paths.add(qpath)
-			*/
 		}
 		
 		cache.put(cls, paths)
