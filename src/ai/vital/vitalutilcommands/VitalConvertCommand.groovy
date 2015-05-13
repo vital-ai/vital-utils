@@ -9,18 +9,18 @@ import java.util.zip.GZIPOutputStream
 
 import org.apache.commons.io.IOUtils;
 
-import ai.vital.property.BooleanProperty;
-import ai.vital.property.DateProperty;
-import ai.vital.property.DoubleProperty;
-import ai.vital.property.FloatProperty;
-import ai.vital.property.GeoLocationProperty;
-import ai.vital.property.IProperty
-import ai.vital.property.IntegerProperty;
-import ai.vital.property.LongProperty
-import ai.vital.property.NumberProperty
-import ai.vital.property.OtherProperty;
-import ai.vital.property.StringProperty;
-import ai.vital.property.URIProperty
+import ai.vital.vitalsigns.model.property.BooleanProperty;
+import ai.vital.vitalsigns.model.property.DateProperty;
+import ai.vital.vitalsigns.model.property.DoubleProperty;
+import ai.vital.vitalsigns.model.property.FloatProperty;
+import ai.vital.vitalsigns.model.property.GeoLocationProperty;
+import ai.vital.vitalsigns.model.property.IProperty
+import ai.vital.vitalsigns.model.property.IntegerProperty;
+import ai.vital.vitalsigns.model.property.LongProperty
+import ai.vital.vitalsigns.model.property.NumberProperty
+import ai.vital.vitalsigns.model.property.OtherProperty;
+import ai.vital.vitalsigns.model.property.StringProperty;
+import ai.vital.vitalsigns.model.property.URIProperty
 import ai.vital.vitalsigns.VitalSigns;
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer.BlockIterator

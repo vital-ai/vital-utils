@@ -2,8 +2,8 @@ package ai.vital.vitalutilcommands
 
 import org.apache.commons.io.IOUtils;
 
-import ai.vital.endpoint.EndpointType;
-import ai.vital.property.URIProperty;
+import ai.vital.vitalservice.EndpointType;
+import ai.vital.vitalsigns.model.property.URIProperty;
 import ai.vital.vitalsigns.model.GraphObject
 import ai.vital.vitalsigns.model.VITAL_Node;
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer

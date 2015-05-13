@@ -1,8 +1,8 @@
 package ai.vital.vitalutilcommands
 
-import ai.vital.property.BooleanProperty;
-import ai.vital.property.IProperty
-import ai.vital.property.URIProperty;
+import ai.vital.vitalsigns.model.property.BooleanProperty;
+import ai.vital.vitalsigns.model.property.IProperty
+import ai.vital.vitalsigns.model.property.URIProperty;
 import ai.vital.query.querybuilder.VitalBuilder;
 import ai.vital.vitalservice.VitalService
 import ai.vital.vitalservice.VitalStatus;

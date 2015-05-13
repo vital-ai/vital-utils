@@ -1,6 +1,6 @@
 package ai.vital.vitalutilcommands
 
-import ai.vital.endpoint.EndpointType;
+import ai.vital.vitalservice.EndpointType;
 import ai.vital.vitalservice.VitalService
 import ai.vital.vitalservice.VitalStatus
 import ai.vital.vitalservice.factory.VitalServiceFactory;

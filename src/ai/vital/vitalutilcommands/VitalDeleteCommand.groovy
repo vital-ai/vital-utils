@@ -3,8 +3,8 @@ package ai.vital.vitalutilcommands
 import java.util.Map.Entry
 import org.apache.commons.io.FileUtils;
 
-import ai.vital.endpoint.EndpointType;
-import ai.vital.property.URIProperty
+import ai.vital.vitalservice.EndpointType;
+import ai.vital.vitalsigns.model.property.URIProperty
 import ai.vital.query.querybuilder.VitalBuilder
 import ai.vital.vitalservice.VitalService
 import ai.vital.vitalservice.VitalStatus;
