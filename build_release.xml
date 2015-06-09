@@ -1,0 +1,59 @@
+<project name="vital-utils-release" default="main">
+
+	<fail unless="dist.version" message="dist.version property not set!" />
+		
+	<property name="utils.dist.javadoc" value="dist/vitalutilscommand-${dist.version}-javadoc.jar" />
+	
+	<property name="module.dir" value="${basedir}/dist-module" />
+		
+	<property name="dist.zip" value="${module.dir}/vital-utils-${dist.version}.zip" />
+	
+	<property name="dist.tar.gz" value="${module.dir}/vital-utils-${dist.version}.tar.gz" />
+	
+	<property name="dist.javadocs.zip" value="${module.dir}/vital-utils-${dist.version}-javadocs.zip" />
+	
+	<property name="dist.readme" value="${module.dir}/vital-utils-${dist.version}-readme.txt" />
+	
+	<property name="prefix" value="vitalutil" />
+	
+	<!-- for module distribution build-->
+	<target name="main">
+		
+		<mkdir dir="${module.dir}" />
+		
+		<delete file="${dist.zip}" />
+		<delete file="${dist.tar.gz}" />
+		<delete file="${dist.javadocs.zip}" />
+		
+		
+		<tar destfile="${dist.tar.gz}" compression="gzip" defaultexcludes="true">
+			<tarfileset dir="${basedir}" filemode="755" defaultexcludes="true" prefix="${prefix}">
+				<include name="bin/**" />
+			</tarfileset>
+		    <tarfileset dir="${basedir}" defaultexcludes="true" prefix="${prefix}">
+				<include name="lib/**" />
+       		</tarfileset>
+			<tarfileset dir="${basedir}/dist" prefix="${prefix}/command">
+				<include name="vitalutilscommand-${dist.version}.jar" />
+			</tarfileset>
+       	</tar>
+		
+    	<zip destfile="${dist.zip}" compress="true" defaultexcludes="true">
+    		<zipfileset dir="${basedir}" filemode="755" defaultexcludes="true" prefix="${prefix}">
+                <include name="bin/**"/>
+    		</zipfileset>
+    		<zipfileset dir="${basedir}" defaultexcludes="false" prefix="${prefix}">
+				<include name="lib/**" />
+    		</zipfileset>
+			<zipfileset dir="${basedir}/dist" prefix="${prefix}/command">
+				<include name="vitalutilscommand-${dist.version}.jar" />
+			</zipfileset>    		
+    	</zip>
+		
+		<copy file="${utils.dist.javadoc}" tofile="${dist.javadocs.zip}" />
+		
+		<copy file="${basedir}/README.md" tofile="${dist.readme}" />
+		
+	</target>
+	
+</project>

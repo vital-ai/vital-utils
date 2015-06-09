@@ -25,8 +25,8 @@ import org.apache.commons.lang3.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ai.vital.domain.Category;
-import ai.vital.domain.Edge_hasChildCategory;
+import ai.vital.vitalsigns.model.VITAL_Category;
+import ai.vital.vitalsigns.model.Edge_hasChildCategory;
 import ai.vital.vitalsigns.VitalSigns;
 
 public class HierarchicalCategories {
@@ -43,7 +43,7 @@ public class HierarchicalCategories {
 		
 		log.info("Loading taxonomy from ontology, rootURI: " + rootURI);
 		
-		Map<String, Category> URI2cat = new HashMap<String, Category>();
+		Map<String, VITAL_Category> URI2cat = new HashMap<String, VITAL_Category>();
 		
 //		String filter = rootURI;
 //		int lastHash = rootURI.lastIndexOf('#');
@@ -52,11 +52,11 @@ public class HierarchicalCategories {
 //		}
 		
 		
-		for(Category c : VitalSigns.get().listDomainIndividuals(Category.class, null)) {
+		for(VITAL_Category c : VitalSigns.get().listDomainIndividuals(VITAL_Category.class, null)) {
 			URI2cat.put(c.getURI(), c);
 		}
 		
-		Category rootCategory = URI2cat.get(rootURI);
+		VITAL_Category rootCategory = URI2cat.get(rootURI);
 		if(rootCategory == null) throw new IOException("Root category not found: " + rootURI);
 
 		Map<String, List<Edge_hasChildCategory>> edgesMap = new HashMap<String, List<Edge_hasChildCategory>>();
@@ -103,7 +103,7 @@ public class HierarchicalCategories {
 //						continue;
 					}
 					
-					Category category = URI2cat.get(newURI);
+					VITAL_Category category = URI2cat.get(newURI);
 					String label = (String) (category != null ? category.getProperty("name") : null);
 					
 					TaxonomyNode newNode = new TaxonomyNode(newURI, label, depth);

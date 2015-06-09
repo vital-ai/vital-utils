@@ -16,8 +16,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import ai.vital.domain.Category;
-import ai.vital.domain.Edge_hasChildCategory;
+import ai.vital.vitalsigns.model.VITAL_Category;
+import ai.vital.vitalsigns.model.Edge_hasChildCategory;
 import ai.vital.predict.categories.HierarchicalCategories.TaxonomyNode;
 import ai.vital.vitalsigns.model.GraphObject;
 import ai.vital.vitalutilcommands.AbstractUtil;
@@ -82,7 +82,7 @@ public class TaxonomyOWLBridge extends AbstractUtil {
 
 	public static void writeNode(Model model, TaxonomyNode node) {
 	
-		Category category = new Category();
+		VITAL_Category category = new VITAL_Category();
 		category.setURI(node.getURI());
 		category.setProperty("name", node.getLabel());
 		

@@ -8,8 +8,6 @@
 	<classpathentry kind="var" path="VITAL_HOME/vital-domain/VitalDomain-groovy-0.2.251.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/command/VitalSigns-0.2.251.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalservice/VitalService-0.2.251.jar"/>
-	<classpathentry kind="lib" path="lib/javacsv-2.1/javacsv-2.1.jar"/>
-	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/groovy-2.4.0/groovy-all-2.4.0.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/commons-cli-1.2.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/commons-codec-1.5.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/commons-collections-3.2.1.jar"/>
@@ -35,5 +33,7 @@
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/trove-3.0.3.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/xercesImpl-2.10.0.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/xml-apis-1.4.01.jar"/>
+	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/groovy-2.4.0/groovy-all-2.4.0.jar"/>
+	<classpathentry kind="lib" path="lib/javacsv-2.1/javacsv-2.1.jar"/>
 	<classpathentry kind="output" path="bin_classes"/>
 </classpath>
