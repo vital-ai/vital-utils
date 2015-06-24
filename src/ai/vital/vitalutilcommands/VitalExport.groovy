@@ -164,6 +164,27 @@ class VitalExport extends AbstractUtil {
 		
 			int limit = DEFAULT_LIMIT
 			
+			if(output.getName().endsWith(".vital") || output.getName().endsWith(".vital.gz")) {
+				
+				OutputStream outputStream = new FileOutputStream(output)
+				
+				if( output.getName().endsWith(".vital.gz") ) {
+					outputStream = new GZIPOutputStream(outputStream)
+				}
+				
+				println "Bulk dumping to vital format..."
+				BufferedOutputStream os = new BufferedOutputStream(outputStream)
+				
+				service.bulkExport(segmentObj, os)
+				
+				os.close()
+				
+				println "Bulk export complete"
+				
+				return
+			}
+			
+			
 			VitalExportQuery sq = new VitalExportQuery()
 			sq.segments = [segmentObj]
 			sq.limit = limit
