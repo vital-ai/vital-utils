@@ -104,4 +104,10 @@ class AbstractUtil {
 		}
 	}
 	
+	static FileFilter builderFileFilter = new FileFilter() {
+		public boolean accept(File f) {
+			return f.name.endsWith(".groovy") || f.name.endsWith(".builder")
+		}
+	}
+	
 }

@@ -1,7 +1,9 @@
 package ai.vital.vitalutilcommands
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
+import ai.vital.query.querybuilder.VitalBuilder
 import ai.vital.vitalservice.EndpointType;
 import ai.vital.vitalsigns.model.property.URIProperty;
 import ai.vital.vitalsigns.model.GraphObject
@@ -10,6 +12,7 @@ import ai.vital.vitalsigns.block.BlockCompactStringSerializer
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer.BlockIterator;
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer.VitalBlock
 import ai.vital.vitalsigns.rdf.VitalNTripleIterator
+import ai.vital.vitalservice.ServiceOperations
 import ai.vital.vitalservice.VitalService;
 import ai.vital.vitalservice.VitalStatus
 import ai.vital.vitalservice.factory.VitalServiceFactory
@@ -30,9 +33,11 @@ class VitalImport extends AbstractUtil {
 		def cli = new CliBuilder(usage: 'vitalimport [options]')
 		cli.with {
 			h longOpt: "help", "Show usage information", args: 0, required: false
-			f longOpt: "file", "input file or directory, supported extensions .vital[.gz], .nt[.gz]", args:1, required: true
-			s longOpt: "segment", "target segment", args: 1, required: true
+			im longOpt: "import-builder", "Import builder file (.builder or .groovy extension), overrides other parameters except profile", args: 1, required: false
+			f longOpt: "file", "input file or directory, supported extensions .vital[.gz], .nt[.gz], .groovy|.builder", args:1, required: false
+			s longOpt: "segment", "target segment", args: 1, required: false
 			b longOpt: "batch", "blocks per batch, default: ${DEFAULT_BLOCKS}", args: 1, required: false
+			bulk longOpt: "bulk-mode", "bulk import data without checking existing objects, only block compact string format", args: 0, required: false
 			v longOpt: "verbose", "report import progress (only in non-big-files mode)", args: 0, required: false
 			c longOpt: "check", "check input files - DOES NOT IMPORT", args: 0, required: false
 			bf longOpt: "bigFiles", "[true|false] flag, force big files flag (only vitalprime), default true", args: 1, required: false
@@ -44,7 +49,55 @@ class VitalImport extends AbstractUtil {
 
 		if(!options || options.h) return
 		
-		List files = options.fs
+		String profile = options.prof ? options.prof : null
+		
+		String importBuilder = options.im ? options.im : null
+		
+		if(importBuilder != null) {
+			
+			File importBuilderFile = new File(importBuilder)
+			
+			println ("Import builder file provided ${importBuilderFile.absolutePath} - ignoring other params");
+
+			if( ! ( importBuilderFile.name.endsWith(".groovy") || importBuilderFile.name.endsWith(".builder") ) ) error("Builder file must end with .groovy or .builder")
+			if(!importBuilderFile.isFile()) error("Import builder file does not exist or not a file: ${importBuilderFile.absolutePath}")
+			
+			
+			def builder = new VitalBuilder()
+			
+			println ("Parsing import builder file...")
+			ServiceOperations ops = builder.queryString(FileUtils.readFileToString(importBuilderFile, "UTF-8")).toService()
+			
+			if(ops.importOptions == null) error("No import options parsed from builder file")
+
+			if(ops.getExportOptions() != null) error("Expected only import options, not export options")
+			if(ops.getOperations() != null && !ops.getOperations().isEmpty()) error("Expected only import options, no other operations")
+			
+			if(profile != null) {
+				println "Setting custom vital service profile: ${profile}"
+				VitalServiceFactory.setServiceProfile(profile)
+			} else {
+				println "Using default vital service profile..."
+			}
+			
+			VitalService service = VitalServiceFactory.getVitalService()
+			println "Obtained vital service, type: ${service.getEndpointType()}, organization: ${service.getOrganization().ID}, app: ${service.getApp().ID}"
+		
+			VitalStatus vs = service.doOperations(ops)
+			
+			if(vs.status != VitalStatus.Status.ok) {
+				error "Import error: " + vs.message
+			}
+			
+			println "DONE"
+			
+			return
+		}
+		
+		
+		List files = options.fs ? options.fs : null
+		
+		if(files == null || files.isEmpty()) error("No files parameter")
 		
 		Integer blocksPerBatch = DEFAULT_BLOCKS
 		
@@ -52,7 +105,8 @@ class VitalImport extends AbstractUtil {
 			blocksPerBatch = Integer.parseInt(options.b)
 		}
 		
-		String segment = options.s
+		String segment = options.s ? options.s : null
+		if(segment == null) error("No 'segment' parameter")
 		
 		println "Segment: ${segment}"
 		println "Input paths [${files.size()}]: ${files}"
@@ -61,7 +115,17 @@ class VitalImport extends AbstractUtil {
 		println "Verbose: ${verbose}"
 		boolean check = options.c ? true : false
 		println "Check data only ? ${check}"
-
+		boolean bulkMode = options.bulk ? true : false
+		println "bulk mode ? $bulkMode"
+		
+		Boolean bigFilesForced = options.bf ? Boolean.parseBoolean(options.bf) : null
+		
+		if(bulkMode) {
+			
+			if(bigFilesForced?.booleanValue()) error("Cannot use bulk and forced bigfiles mode")
+			
+		}
+		
 		List<File> filesObjs = []
 		
 		for(String f : files) {
@@ -75,8 +139,8 @@ class VitalImport extends AbstractUtil {
 			
 			if(fo.isFile()) {
 				
-				if(!blockFileNameFilter.accept(fo) && !ntripleFileFilter.accept(fo)) {
-					error("Cannot accept file: ${fo.absolutePath} - name must end with .vital[.gz] or .nt[.gz]")
+				if(!blockFileNameFilter.accept(fo) && !ntripleFileFilter.accept(fo) && !builderFileFilter.accept(fo)) {
+					error("Cannot accept file: ${fo.absolutePath} - name must end with .vital[.gz] , .nt[.gz] , .groovy , .builder")
 					return
 				}
 				
@@ -89,6 +153,10 @@ class VitalImport extends AbstractUtil {
 				}
 				
 				for(File x : fo.listFiles(ntripleFileFilter)) {
+					if(x.isFile()) filesObjs.add(x)
+				}
+				
+				for(File x : fo.listFiles(builderFileFilter)) {
 					if(x.isFile()) filesObjs.add(x)
 				}
 			
@@ -112,7 +180,6 @@ class VitalImport extends AbstractUtil {
 		println ""
 		
 		
-		String profile = options.prof ? options.prof : null
 		if(profile != null) {
 			println "Setting custom vital service profile: ${profile}"
 			VitalServiceFactory.setServiceProfile(profile)
@@ -136,22 +203,29 @@ class VitalImport extends AbstractUtil {
 			return
 		}
 		
-		Boolean bigFilesForced = options.bf ? Boolean.parseBoolean(options.bf) : null
+		boolean bigFiles = false;
 		
-		boolean bigFiles = service.getEndpointType() == EndpointType.VITALPRIME
 		
-		println "Big files mode ? ${bigFiles} (service.getEndpointType().getName())"
-		
-		if(bigFiles) {
-			if(bigFilesForced != null) {
-				println "Forced big files setting: ${bigFilesForced}"
-				bigFiles = bigFilesForced.booleanValue()
-			}
+		if(bulkMode) {
+			
 		} else {
-			if(bigFilesForced != null) {
-				println "WARNING: ignoring bigFiles flag - not a vitalprime endpoint"
+		
+			bigFiles = service.getEndpointType() == EndpointType.VITALPRIME
+			println "Big files mode ? ${bigFiles} (service.getEndpointType().getName())"
+					
+			if(bigFiles) {
+				if(bigFilesForced != null) {
+					println "Forced big files setting: ${bigFilesForced}"
+					bigFiles = bigFilesForced.booleanValue()
+				}
+			} else {
+				if(bigFilesForced != null) {
+					println "WARNING: ignoring bigFiles flag - not a vitalprime endpoint"
+				}
 			}
 		}
+		
+		
 		
 		if(!check && bigFiles) {
 			
@@ -275,6 +349,15 @@ class VitalImport extends AbstractUtil {
 				
 					println "${c} graph objects"
 						
+				} else if(builderFileFilter.accept(f)) {
+				
+					def builder = new VitalBuilder()
+				
+					println "Parsing builder file..."
+					String t = FileUtils.readFileToString(f, "UTF-8")
+					List<VitalBlock> blocks = builder.queryString(t).toBlock()
+					
+					println "Blocks count: ${blocks.size()}"
 				
 				} else {
 					error("unhandled file: ${f.absolutePath}")
@@ -288,108 +371,155 @@ class VitalImport extends AbstractUtil {
 				return 
 			}
 			
-			println "Importing in normal mode..."
-			
-			for(int i = 0 ; i < filesObjs.size(); i++) {
+			if(bulkMode) {
 				
-				File f = filesObjs[i]
+				println "Importing in bulk mode ... (without existing objects check)"
 				
-				println "Importing file ${i+1} of ${filesObjs.size()}: ${f.absolutePath}"
-			
-				long s = t();
+				for(int i = 0 ; i < filesObjs.size(); i++) {
+
+					File f = filesObjs[i]
 				
-				List<VitalBlock> blocks = [] 
+					if( ! blockFileNameFilter.accept(f) ) throw new Exception("Only block files may be imported in bulk mode")
+				}
 				
-				int c = 0
-				
-				long stage = t()
-				
-				if(blockFileNameFilter.accept(f)) {
+				for(int i = 0 ; i < filesObjs.size(); i++) {
 					
-					BlockIterator iterator = null
+					File f = filesObjs[i]
+					
+					println "Importing file ${i+1} of ${filesObjs.size()}: ${f.absolutePath}"
+
+					InputStream inputStream = null;
 					
 					try {
 						
-						iterator = BlockCompactStringSerializer.getBlocksIterator(f)
-					
-						for(VitalBlock block : iterator) {
-							if(blocks.size() >= blocksPerBatch) {
-								
-								//insert
-								persist(segmentObj, blocks, service)
-										
-								if(verbose) {
-									println"imported ${c} blocks (last batch ${t() - stage}ms) ..."
-								}
-										
-								blocks.clear()
-										
-								stage = t()
-										
-							}
-							
-							blocks.add(block)
-							
-							c++
-						}
-							
+						inputStream = new BufferedInputStream(new FileInputStream(f))
+						
+						service.bulkImport(segmentObj, inputStream)
+															
 					} finally {
-						if(iterator != null) try {iterator.close()}catch(Exception e){}
+					
+						IOUtils.closeQuietly(inputStream)
+					
 					}
 					
-				} else if(ntripleFileFilter.accept(f)){
+				}
 				
-					VitalNTripleIterator iterator = null
+			} else {
+			
+				println "Importing in normal mode..."
+				
+				for(int i = 0 ; i < filesObjs.size(); i++) {
+
+					File f = filesObjs[i]
+
+					println "Importing file ${i+1} of ${filesObjs.size()}: ${f.absolutePath}"
+
+					long s = t();
+
+					List<VitalBlock> blocks = []
 					
-					try {
-						
-						iterator = new VitalNTripleIterator(f)
-						
-						for(GraphObject g : iterator) {
-						
-							if(blocks.size() >= blocksPerBatch) {
-								
-								//insert
-								persist(segmentObj, blocks, service)
-										
-								if(verbose) {
-									println"imported ${c} blocks (last batch ${t() - stage}ms) ..."
+					int c = 0
+
+					long stage = t()
+
+					if(blockFileNameFilter.accept(f)) {
+
+						BlockIterator iterator = null
+
+						try {
+
+							iterator = BlockCompactStringSerializer.getBlocksIterator(f)
+
+							for(VitalBlock block : iterator) {
+								if(blocks.size() >= blocksPerBatch) {
+
+									//insert
+									persist(segmentObj, blocks, service)
+
+									if(verbose) {
+										println"imported ${c} blocks (last batch ${t() - stage}ms) ..."
+									}
+
+									blocks.clear()
+
+									stage = t()
+
 								}
-										
-								blocks.clear()
-										
-								stage = t()
-										
+
+								blocks.add(block)
+
+								c++
 							}
-							
-							VitalBlock block = new VitalBlock()
-							block.mainObject = g
-							 
-							blocks.add(block)
-							
-							c++
-								
+
+						} finally {
+							if(iterator != null) try {iterator.close()}catch(Exception e){}
+						}
+
+					} else if(ntripleFileFilter.accept(f)){
+
+						VitalNTripleIterator iterator = null
+
+						try {
+
+							iterator = new VitalNTripleIterator(f)
+
+							for(GraphObject g : iterator) {
+
+								if(blocks.size() >= blocksPerBatch) {
+
+									//insert
+									persist(segmentObj, blocks, service)
+
+									if(verbose) {
+										println"imported ${c} blocks (last batch ${t() - stage}ms) ..."
+									}
+
+									blocks.clear()
+
+									stage = t()
+
+								}
+
+								VitalBlock block = new VitalBlock()
+								block.mainObject = g
+
+								blocks.add(block)
+
+								c++
+
+							}
+
+						} finally {
+							IOUtils.closeQuietly(iterator)
 						}
 						
-					} finally {
-						IOUtils.closeQuietly(iterator)
-					}
-				
-				} else {
-					error("unhandled file: ${f.absolutePath}")
-				}
-				
-				
-				if(blocks.size() > 0) {
-					persist(segmentObj, blocks, service)
-				}
-				
-				long stop = t()
-				
-				println "File ${i+1} ${f.absolutePath}: total ${c} blocks, ${stop-s}ms"
-				
+					} else if(builderFileFilter.accept(f)) {
+
+						def builder = new VitalBuilder()
 					
+						println "Parsing builder file..."
+						String t = FileUtils.readFileToString(f, "UTF-8")
+						blocks = builder.queryString(t).toBlock()
+						
+						println "Blocks count: ${blocks.size()}"
+						
+					} else {
+						error("unhandled file: ${f.absolutePath}")
+					}
+
+
+					if(blocks.size() > 0) {
+						persist(segmentObj, blocks, service)
+					}
+
+					long stop = t()
+
+					println "File ${i+1} ${f.absolutePath}: total ${c} blocks, ${stop-s}ms"
+
+
+				}
 			}
+
 				
 		}	
 			

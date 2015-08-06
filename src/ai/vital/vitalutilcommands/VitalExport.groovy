@@ -1,6 +1,8 @@
 package ai.vital.vitalutilcommands
 
+import ai.vital.query.querybuilder.VitalBuilder
 import ai.vital.vitalservice.EndpointType;
+import ai.vital.vitalservice.ServiceOperations;
 import ai.vital.vitalservice.VitalService
 import ai.vital.vitalservice.VitalStatus
 import ai.vital.vitalservice.factory.VitalServiceFactory;
@@ -14,6 +16,8 @@ import ai.vital.vitalsigns.model.VITAL_Node
 import ai.vital.vitalsigns.ontology.VitalCoreOntology;
 
 import java.util.zip.GZIPOutputStream
+
+import org.apache.commons.io.FileUtils;
 
 import com.hp.hpl.jena.rdf.model.Model
 import com.hp.hpl.jena.rdf.model.ModelFactory;
@@ -36,10 +40,12 @@ class VitalExport extends AbstractUtil {
 		def cli = new CliBuilder(usage: 'vitalexport [options]')
 		cli.with {
 			h longOpt: "help", "Show usage information", args: 0, required: false
-			o longOpt: "output", "output block file or remote temp file name, supported extensions: .vital[.gz] .nt[.gz]", args:1, required: true
+			ex longOpt: "export-builder", "Export builder file (.builder or .groovy extension), overrides other parameters except profile", args: 1, required: false
+			o longOpt: "output", "output block file or remote temp file name, supported extensions: .vital[.gz] .nt[.gz]", args:1, required: false
 			ow longOpt: "overwrite", "overwrite output file", args: 0, required: false
-			s longOpt: "segment", "target segment", args: 1, required: true
+			s longOpt: "segment", "target segment", args: 1, required: false
 			b longOpt: "block", "block size (only .vital[.gz]), default ${DEFAULT_BLOCK_SIZE}", args: 1, required: false
+			bulk longOpt: "bulk-mode", "bulk export data, only block compact string format", args: 0, required: false
 			bf longOpt: "bigFiles", "[true|false] flag, force big files flag (only vitalprime), default true", args: 1, required: false
 			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 		}
@@ -48,14 +54,63 @@ class VitalExport extends AbstractUtil {
 		
 		if(!options || options.h) return
 		
+		String exportBuilder = options.ex ? options.ex : null
+		
+		String profile = options.prof ? options.prof : null
+		
+		if(exportBuilder != null) {
+			
+			File exportBuilderFile = new File(exportBuilder)
+			
+			println ("Export builder file provided ${exportBuilderFile.absolutePath} - ignoring other params");
+
+			if( ! ( exportBuilderFile.name.endsWith(".groovy") || exportBuilderFile.name.endsWith(".builder") ) ) error("Builder file must end with .groovy or .builder")			
+			if(!exportBuilderFile.isFile()) error("Export builder file does not exist or not a file: ${exportBuilderFile.absolutePath}")
+			
+			
+			def builder = new VitalBuilder()
+			
+			println ("Parsing export builder file...")
+			ServiceOperations ops = builder.queryString(FileUtils.readFileToString(exportBuilderFile, "UTF-8")).toService()
+			
+			if(ops.exportOptions == null) error("No export options parsed from builder file")
+
+			if(ops.getImportOptions() != null) error("Expected only export options, not import options")
+			if(ops.getOperations() != null && !ops.getOperations().isEmpty()) error("Expected only export options, no other operations")
+			
+			if(profile != null) {
+				println "Setting custom vital service profile: ${profile}"
+				VitalServiceFactory.setServiceProfile(profile)
+			} else {
+				println "Using default vital service profile..."
+			}
+			
+			VitalService service = VitalServiceFactory.getVitalService()
+			println "Obtained vital service, type: ${service.getEndpointType()}, organization: ${service.getOrganization().ID}, app: ${service.getApp().ID}"
+		
+			VitalStatus vs = service.doOperations(ops)
+			
+			if(vs.status != VitalStatus.Status.ok) {
+				error "Export error: " + vs.message	
+			}
+			
+			println "DONE"
+			
+			return 	
+		}
+		
 		
 		Boolean overwrite = Boolean.TRUE.equals(options.ow)
 		
 		Boolean bigFilesForced = options.bf ? Boolean.parseBoolean(options.bf) : null
 		
-		String segment = options.s
+		String segment = options.s ? options.s : null
 		
-		String profile = options.prof ? options.prof : null
+		if(segment == null) error("No segment parameter")
+		
+		File output = new File(options.o)
+		
+		if(!options.o) throw new Exception("No output parameter")
 		
 		Integer blockSize = DEFAULT_BLOCK_SIZE
 		if(options.b) {
@@ -66,6 +121,13 @@ class VitalExport extends AbstractUtil {
 		println "Segment: ${segment}"
 		println "block size: ${blockSize}"
 
+		boolean bulkMode = options.bulk ? true : false
+		println "bulk mode ? $bulkMode"
+		
+		if(bulkMode) {
+			if(bigFilesForced?.booleanValue()) error("Cannot use bulk and forced bigfiles mode")
+		}
+		
 		if(profile != null) {
 			println "Setting custom vital service profile: ${profile}"
 			VitalServiceFactory.setServiceProfile(profile)
@@ -91,22 +153,29 @@ class VitalExport extends AbstractUtil {
 		}
 		
 		
-		boolean bigFiles = service.getEndpointType() == EndpointType.VITALPRIME
+		boolean bigFiles = false
 		
-		println "Big files mode ? ${bigFiles} (service.getEndpointType().getName())"
 		
-		if(bigFiles) {
-			if(bigFilesForced != null) {
-				println "Forced big files setting: ${bigFilesForced}"
-				bigFiles = bigFilesForced.booleanValue()
-			}			
+		if(bulkMode) {
+			
 		} else {
-			if(bigFilesForced != null) {
-				println "WARNING: ignoring bigFiles flag - not a vitalprime endpoint"
-			}
-		}
 		
-		File output = new File(options.o)
+			bigFiles = service.getEndpointType() == EndpointType.VITALPRIME
+			
+			println "Big files mode ? ${bigFiles} (service.getEndpointType().getName())"
+			
+			if(bigFiles) {
+				if(bigFilesForced != null) {
+					println "Forced big files setting: ${bigFilesForced}"
+					bigFiles = bigFilesForced.booleanValue()
+				}			
+			} else {
+				if(bigFilesForced != null) {
+					println "WARNING: ignoring bigFiles flag - not a vitalprime endpoint"
+				}
+			}
+		
+		}
 		
 		if(!blockFileNameFilter.accept(output) && !ntripleFileFilter.accept(output)) {
 			error("Output file name must end with .vital[.gz] or .nt[.gz]: ${output.name}")
@@ -152,6 +221,28 @@ class VitalExport extends AbstractUtil {
 			
 			}
 			
+		} else if(bulkMode) {
+		
+		
+			if(!output.getName().endsWith(".vital") || output.getName().endsWith(".vital.gz")) error("only .vital[.gz] output file in bulk mode")
+			
+			OutputStream outputStream = new FileOutputStream(output)
+			
+			if( output.getName().endsWith(".vital.gz") ) {
+				outputStream = new GZIPOutputStream(outputStream)
+			}
+			
+			println "Bulk dumping to vital format..."
+			BufferedOutputStream os = new BufferedOutputStream(outputStream)
+			
+			service.bulkExport(segmentObj, os)
+			
+			os.close()
+			
+			println "Bulk export complete"
+			
+			return
+		
 		} else {
 		
 			println "Output file: ${output.absolutePath}"
@@ -163,27 +254,6 @@ class VitalExport extends AbstractUtil {
 			}
 		
 			int limit = DEFAULT_LIMIT
-			
-			if(output.getName().endsWith(".vital") || output.getName().endsWith(".vital.gz")) {
-				
-				OutputStream outputStream = new FileOutputStream(output)
-				
-				if( output.getName().endsWith(".vital.gz") ) {
-					outputStream = new GZIPOutputStream(outputStream)
-				}
-				
-				println "Bulk dumping to vital format..."
-				BufferedOutputStream os = new BufferedOutputStream(outputStream)
-				
-				service.bulkExport(segmentObj, os)
-				
-				os.close()
-				
-				println "Bulk export complete"
-				
-				return
-			}
-			
 			
 			VitalExportQuery sq = new VitalExportQuery()
 			sq.segments = [segmentObj]
