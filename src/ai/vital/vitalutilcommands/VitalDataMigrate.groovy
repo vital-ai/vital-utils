@@ -23,8 +23,8 @@ class VitalDataMigrate extends AbstractUtil {
 			o longOpt: "output", "overrides path in a builder, .vital[.gz] file", args: 1, required: false
 			ow longOpt: "overwrite", "overwrite output file if exists", args:0, required: false
 			b longOpt: "builder", "builder file, .groovy or .builder extension", args: 1, required: false
-			owlfile longOpt: "owl-file", "overrides name in builder, older owl file path option", args: 1, required: false
-			d longOpt: "direction", "[upgrade, dowgrade], required when no builder file provided", args:1, required: false
+			owlfile longOpt: "owl-file", "older owl file name, required in builderless mode", args: 1, required: false
+			d longOpt: "direction", "[upgrade, dowgrade], required in builderless mode", args:1, required: false
 		}
 
 		if(args.length < 1) {
