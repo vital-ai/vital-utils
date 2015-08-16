@@ -5,9 +5,9 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
 	<classpathentry exported="true" kind="con" path="GROOVY_DSL_SUPPORT"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
-	<classpathentry kind="var" path="VITAL_HOME/vital-domain/VitalDomain-groovy-0.2.253.jar"/>
-	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/command/VitalSigns-0.2.253.jar"/>
-	<classpathentry kind="var" path="VITAL_HOME/vitalservice/VitalService-0.2.252.jar"/>
+	<classpathentry kind="var" path="VITAL_HOME/vital-domain/VitalDomain-groovy-0.2.254.jar"/>
+	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/command/VitalSigns-0.2.254.jar"/>
+	<classpathentry kind="var" path="VITAL_HOME/vitalservice/VitalService-0.2.254.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/commons-cli-1.2.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/commons-codec-1.5.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/commons-collections-3.2.1.jar"/>
@@ -33,7 +33,10 @@
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/trove-3.0.3.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/xercesImpl-2.10.0.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/xml-apis-1.4.01.jar"/>
-	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/groovy-2.4.0/groovy-all-2.4.0.jar"/>
+	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/groovy-2.5.0/groovy-all-2.5.0-SNAPSHOT.jar"/>
 	<classpathentry kind="lib" path="lib/javacsv-2.1/javacsv-2.1.jar"/>
+	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/groovy-2.5.0/xstream-1.4.8.jar"/>
+	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/jimfs-1.0.jar"/>
+	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/guava-18.0.jar"/>
 	<classpathentry kind="output" path="bin_classes"/>
 </classpath>
