@@ -14,7 +14,8 @@ def vitalhome = System.getenv('VITAL_HOME')
 
 def homeDir = vitalhome + "/" + "vitalutil" + "/"
 
-def mainClass = 'ai.vital.vitalutilcommands.VitalAsciiDoc'
+//def mainClass = 'ai.vital.vitalutilcommands.VitalAsciiDoc'
+def mainClass = 'org.asciidoctor.cli.AsciidoctorInvoker'
 
 List jars = []
 
