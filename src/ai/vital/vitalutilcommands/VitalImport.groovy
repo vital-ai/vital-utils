@@ -39,7 +39,8 @@ class VitalImport extends AbstractUtil {
 			b longOpt: "batch", "blocks per batch, default: ${DEFAULT_BLOCKS}", args: 1, required: false
 			bulk longOpt: "bulk-mode", "bulk import data without checking existing objects, only block compact string format", args: 0, required: false
 			v longOpt: "verbose", "report import progress (only in non-big-files mode)", args: 0, required: false
-			c longOpt: "check", "check input files - DOES NOT IMPORT", args: 0, required: false
+			c longOpt: "check", "check input files only - DOES NOT IMPORT, mutually exclusive with --skip-check", args: 0, required: false
+			sc longOpt: 'skip-check', "skips the default data validation, mutually exclusive with --check", args: 0, required: false 
 			bf longOpt: "bigFiles", "[true|false] flag, force big files flag (only vitalprime), default true", args: 1, required: false
 			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 			//bf longOpt: 'bigfiles', "the flag to import the data in background, after they're uploaded", args: 0 , required: false
@@ -130,8 +131,14 @@ class VitalImport extends AbstractUtil {
 		println "Verbose: ${verbose}"
 		boolean check = options.c ? true : false
 		println "Check data only ? ${check}"
+		boolean skipCheck = options.sc ? true : false
+		println "Skip data check ? ${skipCheck}"
 		boolean bulkMode = options.bulk ? true : false
 		println "bulk mode ? $bulkMode"
+		
+		if(check && skipCheck) {
+			error "--check and --skip-check flags are mutually exclusive"
+		}
 		
 		Boolean bigFilesForced = options.bf ? Boolean.parseBoolean(options.bf) : null
 		
@@ -313,73 +320,79 @@ class VitalImport extends AbstractUtil {
 			
 		} else {
 		
-			println "Checking the data ..."
-			
-			for(int i = 0 ; i < filesObjs.size(); i++) {
-				File f = filesObjs[i]
+			if( ! skipCheck ) {
 				
-				println "Checking file ${i+1} of ${filesObjs.size()}: ${f.absolutePath}"
+				println "Checking the data ..."
 				
-				if(blockFileNameFilter.accept(f)) {
+				for(int i = 0 ; i < filesObjs.size(); i++) {
+					File f = filesObjs[i]
 					
-					BlockIterator iterator = null
+					println "Checking file ${i+1} of ${filesObjs.size()}: ${f.absolutePath}"
 					
-					int c = 0
-					
-					try {
+					if(blockFileNameFilter.accept(f)) {
 						
-						iterator = BlockCompactStringSerializer.getBlocksIterator(f)
-					
-						for(VitalBlock block : iterator) {
-							c++
+						BlockIterator iterator = null
+						
+						int c = 0
+						
+						try {
+							
+							iterator = BlockCompactStringSerializer.getBlocksIterator(f)
+						
+							for(VitalBlock block : iterator) {
+								c++
+							}
+							
+						} catch(Exception e) {
+							error(e.localizedMessage)
+						} finally {
+							if(iterator != null) try {iterator.close()}catch(Exception e){}
 						}
-						
-					} catch(Exception e) {
-						error(e.localizedMessage)
-					} finally {
-						if(iterator != null) try {iterator.close()}catch(Exception e){}
-					}
-
-					println "${c} blocks"				
-						
-				} else if(ntripleFileFilter.accept(f)){
-				
-					VitalNTripleIterator iterator = null
+	
+						println "${c} blocks"				
+							
+					} else if(ntripleFileFilter.accept(f)){
 					
-					int c = 0
-					
-					try {
+						VitalNTripleIterator iterator = null
 						
-						iterator = new VitalNTripleIterator(f)
+						int c = 0
 						
-						for(GraphObject g : iterator) {
-							c++
+						try {
+							
+							iterator = new VitalNTripleIterator(f)
+							
+							for(GraphObject g : iterator) {
+								c++
+							}
+							
+						} catch(Exception e) {
+							error(e.localizedMessage)
+						} finally {
+							IOUtils.closeQuietly(iterator)	
 						}
-						
-					} catch(Exception e) {
-						error(e.localizedMessage)
-					} finally {
-						IOUtils.closeQuietly(iterator)	
-					}
-				
-					println "${c} graph objects"
-						
-				} else if(builderFileFilter.accept(f)) {
-				
-					def builder = new VitalBuilder()
-				
-					println "Parsing builder file..."
-					String t = FileUtils.readFileToString(f, "UTF-8")
-					List<VitalBlock> blocks = builder.queryString(t).toBlock()
 					
-					println "Blocks count: ${blocks.size()}"
-				
-				} else {
-					error("unhandled file: ${f.absolutePath}")
+						println "${c} graph objects"
+							
+					} else if(builderFileFilter.accept(f)) {
+					
+						def builder = new VitalBuilder()
+					
+						println "Parsing builder file..."
+						String t = FileUtils.readFileToString(f, "UTF-8")
+						List<VitalBlock> blocks = builder.queryString(t).toBlock()
+						
+						println "Blocks count: ${blocks.size()}"
+					
+					} else {
+						error("unhandled file: ${f.absolutePath}")
+					}
+					
 				}
+			} else {
+			
+				println "Data check skipped"
 				
 			}
-			
 			
 			if(check) {
 				println "Data check complete - no errors"
