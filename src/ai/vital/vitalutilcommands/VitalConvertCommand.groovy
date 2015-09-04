@@ -118,7 +118,7 @@ class VitalConvertCommand extends AbstractUtil {
 		
 		boolean nullValues = options.nv ? true : false
 		
-		boolean shortCirciut = options.sc ? true : false
+		boolean shortCircuit = options.sc ? true : false
 		
 		String iname = inputFile.name
 		
@@ -175,7 +175,7 @@ class VitalConvertCommand extends AbstractUtil {
 		if(inputCSV) {
 			println "autogenerate URI ? ${autogenerateURI}"
 			println "empty cells as null values ? ${nullValues}"
-			println "short circiut writer ? ${shortCirciut}"
+			println "short circiut writer ? ${shortCircuit}"
 		} else {
 			println "WARN: non-CSV input case, ignoring --autogenerate-uri flag"
 			println "WARN: non-CSV input case, ignoring --null-values flag"
@@ -338,7 +338,7 @@ class VitalConvertCommand extends AbstractUtil {
 				if(inputCSV) {
 					if(!autogenerateURI) error("No URI property mapping found in map file:  ${mapFile.absolutePath}, use --autogenerate-uri option")
 				} else if(outputCSV) {
-					error("URI property mapping is manadatory in block -> CSV conversion")
+//					error("URI property mapping is manadatory in block -> CSV conversion")
 				}
 			}
 			Set<Integer> cols = new HashSet<Integer>(propertyToColumn.values())
@@ -382,9 +382,9 @@ class VitalConvertCommand extends AbstractUtil {
 			CsvReader csvReader = new CsvReader(is, Charset.forName("UTF-8"))
 			
 			
-			BlockCompactStringSerializer serializer = shortCirciut ? null : createSerializer(outputFile);
+			BlockCompactStringSerializer serializer = shortCircuit ? null : createSerializer(outputFile);
 			
-			BufferedWriter cheatWriter = shortCirciut ? new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8)) : null
+			BufferedWriter shortCircuitWriter = shortCircuit ? new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8)) : null
 			
 			int blocks = 0
 			
@@ -553,18 +553,17 @@ class VitalConvertCommand extends AbstractUtil {
 						
 						//string to value
 						
-						g."${propertyName}" = de(v, pInt.unwrapped().getClass())
+						g."${propertyName}" = CompactStringSerializer.de(v, pInt.unwrapped().getClass())
 						
 								
 					}
 					
 				} else {
 				
-					StringBuilder sb = new StringBuilder()
+					//properties map
 				
-					sb.append("type=\"").append(CompactStringSerializer.oldVersionFilter(rdfType, false)).append("\"\tURI=\"").append(URI).append("\"")
-					
-					
+					Map<String, Object> propsMap = new HashMap<String, Object>();
+				
 					for( int i = 0 ; i < vs.length ; i++ ) {
 						
 						if(URIColumn != null && i == URIColumn) continue
@@ -588,21 +587,15 @@ class VitalConvertCommand extends AbstractUtil {
 						
 						if(pm == null) throw new RuntimeException("No property for class "+ clazzObj + " : " + propertyName)
 						
-						sb.append('\t')
-						.append(CompactStringSerializer.oldVersionFilter(pm.getURI(), false));
-//						if(pm == null) {
-//							sb.append('|').append(v.getClass().getCanonicalName());
-//						}
-						sb.append("=\"")
-							.append(v)
-							.append('"');
-								
+						propsMap.put(pm.getURI(), v);
+						
 					}
 					
+					String l = CompactStringSerializer.shortCircuitCompactString(clazzObj, URI, propsMap);
 					
-					cheatWriter.write(BlockCompactStringSerializer.BLOCK_SEPARATOR_WITH_NLINE)
-					cheatWriter.write(sb.toString())
-					cheatWriter.write("\n")
+					shortCircuitWriter.write(BlockCompactStringSerializer.BLOCK_SEPARATOR_WITH_NLINE)
+					shortCircuitWriter.write(l)
+					shortCircuitWriter.write("\n")
 					
 				
 				}
@@ -622,7 +615,7 @@ class VitalConvertCommand extends AbstractUtil {
 						
 			if(serializer != null) serializer.close()
 			
-			if(cheatWriter != null) cheatWriter.close()
+			if(shortCircuitWriter != null) shortCircuitWriter.close()
 			
 			csvReader.close()
 			
@@ -690,15 +683,28 @@ class VitalConvertCommand extends AbstractUtil {
 				
 				String[] vals = new String[propertyToColumn.size()]
 
-				Map<String, IProperty> propsMap = g.propertiesMap
-						
+				Map<String, IProperty> propsMap = g.getPropertiesMap()
+				
+				Map<String, IProperty> shortPropsMap = new HashMap<String, IProperty>()
+				
+				for(Entry<String, IProperty> e : propsMap) {
+					
+					PropertyMetadata pm = VitalSigns.get().getPropertiesRegistry().getProperty(e.getKey())
+					
+					//skip external properties ?
+					if(pm == null) continue
+					
+					shortPropsMap.put(pm.getShortName(), e.getValue())  
+					
+				}		
+				
 				for(int i = 0; i < propertyToColumn.size(); i++) {
 					
 					String property = column2Prop.get(i)
 					
 					String v = ''
 					
-					if(i == URIColumn) {
+					if(URIColumn != null && i == URIColumn) {
 						
 						v = g.URI
 						
@@ -714,11 +720,11 @@ class VitalConvertCommand extends AbstractUtil {
 						
 					} else {
 					
-						IProperty pInt = propsMap.get(property)
+						IProperty pInt = shortPropsMap.get(property)
 						
 						if(pInt != null) {
 						
-							v = es(pInt.rawValue())
+							v = CompactStringSerializer.es(pInt.rawValue())
 							
 						}
 						
@@ -746,66 +752,33 @@ class VitalConvertCommand extends AbstractUtil {
 	}
 
 	
-	//XXX copied from compactstring !
-	public static Object de(String input, Class<?> clazz) {
-	
-		if(clazz == String.class || clazz == StringProperty.class || clazz == URIProperty.class) {
-			return input
-		} else if(clazz == Boolean.class || clazz == BooleanProperty.class) {
-			return new Boolean( Boolean.parseBoolean(input));
-		} else if(clazz == Integer.class || clazz == IntegerProperty.class) {
-			return new Integer(Integer.parseInt(input));
-		} else if(clazz == Long.class || clazz == LongProperty.class) {
-			return new Long(Long.parseLong(input));
-		} else if(clazz == Double.class || clazz == DoubleProperty.class) {
-			return new Double(Double.parseDouble(input));
-		} else if(clazz == Float.class || clazz == FloatProperty.class) {
-			return new Float(Float.parseFloat(input));
-		} else if(clazz == Date.class || clazz == DateProperty.class) {
-			return new Date(Long.parseLong(input));
-		} else if(clazz == GeoLocationProperty.class) {
-			return GeoLocationProperty.fromRDFString(input);
-		} else if(clazz == OtherProperty.class) {
-			return OtherProperty.fromRDFString(input);
-		} else {
-			throw new RuntimeException("Unsupported data type: " + clazz.getCanonicalName());
-		}
-		
-	}
-	
-	//serialize value into string
-	public static String es(Object input) {
-		
-		String s = null;
-		
-		//escape only string values
-			
-		if(input instanceof String) {
-			s = (String)input;
-		} else if(input instanceof Boolean) {
-			s = "" + input;
-		} else if(input instanceof Integer) {
-			s = "" + input;
-		} else if(input instanceof Long) {
-			s = "" + input;
-		} else if(input instanceof Double) {
-			s = "" + input;
-		} else if(input instanceof Float) {
-			s = "" + input;
-		} else if(input instanceof Date) {
-			s = "" + ((Date)input).getTime();
-		} else if(input instanceof GeoLocationProperty) {
-			s = ((GeoLocationProperty)input).toRDFValue();
-		} else if(input instanceof OtherProperty) {
-			s = ((OtherProperty)input).toRDFString();
-		} else {
-			throw new RuntimeException("Unsupported data type: " + input.getClass().getCanonicalName());
-		}
-		return s;
-		
-		//all literal properties
-		
-	}
+//	//XXX copied from compactstring !
+//	public static Object de(String input, Class<?> clazz) {
+//	
+//		if(clazz == String.class || clazz == StringProperty.class || clazz == URIProperty.class) {
+//			return input
+//		} else if(clazz == Boolean.class || clazz == BooleanProperty.class) {
+//			return new Boolean( Boolean.parseBoolean(input));
+//		} else if(clazz == Integer.class || clazz == IntegerProperty.class) {
+//			return new Integer(Integer.parseInt(input));
+//		} else if(clazz == Long.class || clazz == LongProperty.class) {
+//			return new Long(Long.parseLong(input));
+//		} else if(clazz == Double.class || clazz == DoubleProperty.class) {
+//			return new Double(Double.parseDouble(input));
+//		} else if(clazz == Float.class || clazz == FloatProperty.class) {
+//			return new Float(Float.parseFloat(input));
+//		} else if(clazz == Date.class || clazz == DateProperty.class) {
+//			return new Date(Long.parseLong(input));
+//		} else if(clazz == GeoLocationProperty.class) {
+//			return GeoLocationProperty.fromRDFString(input);
+//		} else if(clazz == OtherProperty.class) {
+//			return OtherProperty.fromRDFString(input);
+//		} else {
+//			throw new RuntimeException("Unsupported data type: " + clazz.getCanonicalName());
+//		}
+//		
+//	}
+//	
 	
 	static void nt2Vital(File inputNTFile, File outputBlockFile) {
 		
