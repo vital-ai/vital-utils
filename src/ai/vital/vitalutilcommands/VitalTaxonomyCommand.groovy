@@ -21,8 +21,16 @@ class VitalTaxonomyCommand {
 			o longOpt: 'output', required: true, args: 1, 'Output RDF/XML file'
 		}
 		
-		if(args.length == 0) {
-			cli.usage();
+		boolean displayHelp = args.length == 0
+		
+		for(String arg : args) {
+			if(arg == '-h' || arg == '--help') {
+				displayHelp = true
+			}
+		}
+		
+		if(displayHelp) {
+			cli.usage()
 			return
 		}
 		

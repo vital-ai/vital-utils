@@ -47,6 +47,19 @@ class VitalQuery extends AbstractUtil {
 			mp longOpt: "mainProp", "main bound property, required when --group=true", args: 1, required: false
 			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 		}
+		
+		boolean displayHelp = args.length == 0
+		
+		for(String arg : args) {
+			if(arg == '-h' || arg == '--help') {
+				displayHelp = true
+			}
+		}
+		
+		if(displayHelp) {
+			cli.usage()
+			return
+		}
 
 		def options = cli.parse(args)
 

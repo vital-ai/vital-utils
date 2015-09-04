@@ -27,21 +27,24 @@ class VitalDataMigrate extends AbstractUtil {
 			d longOpt: "direction", "[upgrade, dowgrade], required in builderless mode", args:1, required: false
 		}
 
-		if(args.length < 1) {
-			cli.usage()
-			return
-		}		
+		boolean displayHelp = args.length == 0
 		
-		def options = cli.parse(args)
-		
-		if(!options) {
-			return
+		for(String arg : args) {
+			if(arg == '-h' || arg == '--help') {
+				displayHelp = true
+			}
 		}
 		
-		if( options.h ) {
+		if(displayHelp) {
 			cli.usage()
 			return
 		}	
+		
+		def options = cli.parse(args)
+		
+		if(!options || options.h) {
+			return
+		}
 		
 		File builderFile = options.b ? new File(options.b) : null
 		

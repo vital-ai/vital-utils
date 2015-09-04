@@ -74,7 +74,7 @@ class VitalConvertCommand extends AbstractUtil {
 		}
 
 		
-		Boolean displayHelp = args.length == 0
+		boolean displayHelp = args.length == 0
 		
 		for(String arg : args) {
 			if(arg == '-h' || arg == '--help') {
@@ -83,20 +83,13 @@ class VitalConvertCommand extends AbstractUtil {
 		}
 		
 		if(displayHelp == true) {
-			println "displaying usage..."
 			cli.usage()
 			return
 		}
 		
 		def options = cli.parse(args)
 		
-		if(!options) return
-
-		displayHelp = options.h
-		
-		if(displayHelp != null && displayHelp == true) {
-			println "displaying usage..."
-			cli.usage()
+		if(!options || options.h) {
 			return
 		}
 				
@@ -384,7 +377,20 @@ class VitalConvertCommand extends AbstractUtil {
 			
 			BlockCompactStringSerializer serializer = shortCircuit ? null : createSerializer(outputFile);
 			
-			BufferedWriter shortCircuitWriter = shortCircuit ? new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8)) : null
+			BufferedWriter shortCircuitWriter = null;
+			
+			if(shortCircuit) {
+			
+				OutputStream outputStream = new FileOutputStream(outputFile)
+				
+				if(outputFile.getName().endsWith(".gz")) {
+					outputStream = new GZIPOutputStream(outputStream)
+				}
+				
+				shortCircuitWriter = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8))
+				
+			}
+			
 			
 			int blocks = 0
 			

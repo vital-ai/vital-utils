@@ -18,7 +18,7 @@ class VitalAsciiDoc extends AbstractUtil {
 		}
 		
 		
-		Boolean displayHelp = args.length == 0
+		boolean displayHelp = args.length == 0
 		
 		for(String arg : args) {
 			if(arg == '-h' || arg == '--help') {
@@ -33,7 +33,7 @@ class VitalAsciiDoc extends AbstractUtil {
 		
 		def options = cli.parse(args)
 		
-		if(!options) return
+		if(!options || options.h) return
 		
 		File inputFile = new File( options.i )
 		File outputFile = new File( options.o )

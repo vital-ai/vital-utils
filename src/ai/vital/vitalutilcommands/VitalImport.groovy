@@ -45,6 +45,21 @@ class VitalImport extends AbstractUtil {
 			//bf longOpt: 'bigfiles', "the flag to import the data in background, after they're uploaded", args: 0 , required: false
 		}
 		
+		
+		boolean displayHelp = args.length == 0
+		
+		for(String arg : args) {
+			if(arg == '-h' || arg == '--help') {
+				displayHelp = true
+			}
+		}
+		
+		if(displayHelp) {
+			cli.usage()
+			return
+		}
+		
+		
 		def options = cli.parse(args)
 
 		if(!options || options.h) return
