@@ -1,6 +1,7 @@
 package ai.vital.vitalutilcommands
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Map.Entry
 import java.util.regex.Matcher
 import java.util.regex.Pattern;
@@ -9,6 +10,7 @@ import java.util.zip.GZIPOutputStream
 
 import org.apache.commons.io.IOUtils;
 
+import ai.vital.vitalservice.model.App
 import ai.vital.vitalsigns.model.property.BooleanProperty;
 import ai.vital.vitalsigns.model.property.DateProperty;
 import ai.vital.vitalsigns.model.property.DoubleProperty;
@@ -23,11 +25,14 @@ import ai.vital.vitalsigns.model.property.StringProperty;
 import ai.vital.vitalsigns.model.property.URIProperty
 import ai.vital.vitalsigns.VitalSigns;
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer
+import ai.vital.vitalsigns.block.CompactStringSerializer;
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer.BlockIterator
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer.VitalBlock
 import ai.vital.vitalsigns.model.GraphObject;
+import ai.vital.vitalsigns.ontology.VitalCoreOntology;
 import ai.vital.vitalsigns.properties.PropertyMetadata;
 import ai.vital.vitalsigns.rdf.VitalNTripleIterator
+import ai.vital.vitalsigns.uri.URIGenerator;
 
 import com.csvreader.CsvReader;
 import com.csvreader.CsvWriter;
@@ -63,6 +68,9 @@ class VitalConvertCommand extends AbstractUtil {
 			ow longOpt: 'overwrite', "overwrite output file if exists", args: 0, required: false
 			oh longOpt: 'outputHeader', "prepend csv header (block->csv case only)", args: 0, required: false
 			sh longOpt: 'skipHeader', "skip input csv header (csv->block case only and map file specified)", args: 0, required: false
+			ag longOpt: 'autogenerate-uri', "csv input only,autogenerate random URI, ignores URI mapping, must be set if not URI column provided", args: 0, required: false
+			nv longOpt: 'null-values', "csv input only, handle empty cells as null values", args: 0 , required: false
+			sc longOpt: 'short-circuit', "csv input only, generate output block straight from input csv without objects instantiation", args: 0, required: false
 		}
 
 		
@@ -104,6 +112,13 @@ class VitalConvertCommand extends AbstractUtil {
 		boolean outputBlock = false
 		boolean outputCSV = false
 		boolean outputNT = false
+		
+		
+		boolean autogenerateURI = options.ag ? true : false
+		
+		boolean nullValues = options.nv ? true : false
+		
+		boolean shortCirciut = options.sc ? true : false
 		
 		String iname = inputFile.name
 		
@@ -155,6 +170,16 @@ class VitalConvertCommand extends AbstractUtil {
 			if(options.oh) error("Cannot use -oh param in non-csv conversion")
 			if(options.sh) error("Cannot use -sh param in non-csv conversion")
 			
+		}
+		
+		if(inputCSV) {
+			println "autogenerate URI ? ${autogenerateURI}"
+			println "empty cells as null values ? ${nullValues}"
+			println "short circiut writer ? ${shortCirciut}"
+		} else {
+			println "WARN: non-CSV input case, ignoring --autogenerate-uri flag"
+			println "WARN: non-CSV input case, ignoring --null-values flag"
+			println "WARN: non-CSV input case, ignoring --short-circuit flag"
 		}
 		
 
@@ -242,8 +267,10 @@ class VitalConvertCommand extends AbstractUtil {
 					
 					try {
 												
-						clazzObj = Class.forName(clazz)
-												
+						clazzObj = VitalSigns.get().getClassesRegistry().getGraphObjectClass(clazz)
+						
+						if(clazzObj == null) error("Class not found: " + clazz)						
+						
 						if( ! GraphObject.class.isAssignableFrom(clazzObj) ) error("Class is not a sublcass of ${GraphObject.class.canonicalName}")
 												
 					} catch(Exception e) {
@@ -307,8 +334,13 @@ class VitalConvertCommand extends AbstractUtil {
 			
 			if(propertyToColumn.size() < 1) error("No mappings in mapping file found: ${mapFile.absolutePath}")
 			
-			if(URIColumn == null) error("No required URI property mapping found in map file:  ${mapFile.absolutePath}")
-			
+			if(URIColumn == null) {
+				if(inputCSV) {
+					if(!autogenerateURI) error("No URI property mapping found in map file:  ${mapFile.absolutePath}, use --autogenerate-uri option")
+				} else if(outputCSV) {
+					error("URI property mapping is manadatory in block -> CSV conversion")
+				}
+			}
 			Set<Integer> cols = new HashSet<Integer>(propertyToColumn.values())
 			
 			println "mapped columns count ${cols.size()}"
@@ -349,7 +381,10 @@ class VitalConvertCommand extends AbstractUtil {
 			
 			CsvReader csvReader = new CsvReader(is, Charset.forName("UTF-8"))
 			
-			BlockCompactStringSerializer serializer = createSerializer(outputFile);
+			
+			BlockCompactStringSerializer serializer = shortCirciut ? null : createSerializer(outputFile);
+			
+			BufferedWriter cheatWriter = shortCirciut ? new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8)) : null
 			
 			int blocks = 0
 			
@@ -434,7 +469,9 @@ class VitalConvertCommand extends AbstractUtil {
 						
 				}
 				
-				if(URIColumn == null) error("No column with URI defined")
+				if(URIColumn == null) {
+					if(!autogenerateURI) error("No column with URI defined, use --autogenerate-uri flag")
+				}
 				
 				
 			}
@@ -445,15 +482,45 @@ class VitalConvertCommand extends AbstractUtil {
 				column2Prop.put(e.value, e.key)	
 			}
 
+			GraphObject g = serializer != null ? clazzObj.newInstance() : null
+			
+			Set<String> fieldsToKeep = new HashSet<String>(Arrays.asList(
+				VitalCoreOntology.URIProp.getURI(),
+				VitalCoreOntology.vitaltype.getURI(),
+				VitalCoreOntology.types.getURI()
+			));
+		
+			String rdfType = VitalSigns.get().getClassesRegistry().getClassURI(clazzObj);
+		
+			Map<String, PropertyMetadata> propsCache = new HashMap<String, PropertyMetadata>()
+			
 			while(csvReader.readRecord()) {
 				
 				String[] vs = csvReader.getValues()
 
 //				if(vs.length != propertyToColumn.size()) error("Columns count does not match mappings count: ${vs.length}, ${propertyToColumn}")
 				
-				if(URIColumn > vs.length - 1) error("Record ${csvReader.currentRecord}: columns count (${vs.length}) <= URIColumn index ${URIColumn}")
+				if(URIColumn != null && URIColumn > vs.length - 1) error("Record ${csvReader.currentRecord}: columns count (${vs.length}) <= URIColumn index ${URIColumn}")
 				
-				String URI = vs[URIColumn]
+				if(serializer != null) {
+					
+					g = clazzObj.newInstance()
+					
+				}
+				
+//				GraphObject g = clazzObj.newInstance()
+				
+//				for( Iterator<Entry<String, IProperty>> iterator = g.getPropertiesMap().entrySet().iterator(); iterator.hasNext(); ) {
+//					
+//					Entry<String, IProperty> entry = iterator.next()
+//					
+//					if(fieldsToKeep.contains(entry.getKey())) continue
+//					
+//					iterator.remove()
+//					
+//				}
+				
+				String URI = autogenerateURI ? URIGenerator.generateURI((App)null, clazzObj) : vs[URIColumn]
 				
 				if(URI.isEmpty()) error("Record ${csvReader.currentRecord}: empty URI, column ${URIColumn}")
 				
@@ -465,37 +532,97 @@ class VitalConvertCommand extends AbstractUtil {
 					URI = URI + URISuffix
 				}
 				
-				GraphObject g = clazzObj.newInstance()
 				
-				g.URI = URI
+				if(g != null) {
+					
+					g.URI = URI
+							
+					for( int i = 0 ; i < vs.length ; i++ ) {
+						
+						if(URIColumn != null && i == URIColumn) continue
+						
+						String v = vs[i]
+								
+						if(nullValues && ( v == null || v.isEmpty() ) ) continue
+						
+						String propertyName = column2Prop.get(i)
+						if(!propertyName) continue
+						
+						IProperty pInt = propertyToInterface.get(propertyName)
+						
+						
+						//string to value
+						
+						g."${propertyName}" = de(v, pInt.unwrapped().getClass())
+						
+								
+					}
+					
+				} else {
 				
-				for( int i = 0 ; i < vs.length ; i++ ) {
-					
-					if(i == URIColumn) continue
-					
-					String propertyName = column2Prop.get(i)
-					if(!propertyName) continue
-
-					IProperty pInt = propertyToInterface.get(propertyName)
-					
-					String v = vs[i]
-					
-					//string to value
-					
-					g."${propertyName}" = de(v, pInt.unwrapped().getClass())
+					StringBuilder sb = new StringBuilder()
+				
+					sb.append("type=\"").append(CompactStringSerializer.oldVersionFilter(rdfType, false)).append("\"\tURI=\"").append(URI).append("\"")
 					
 					
+					for( int i = 0 ; i < vs.length ; i++ ) {
+						
+						if(URIColumn != null && i == URIColumn) continue
+						
+						String v = vs[i]
+								
+						if(nullValues && ( v == null || v.isEmpty() ) ) continue
+								
+						String propertyName = column2Prop.get(i)
+						if(!propertyName) continue
+						
+						PropertyMetadata pm = propsCache.get(propertyName)
+						
+						if(pm == null) {
+							pm = VitalSigns.get().getPropertiesRegistry().getPropertyByShortName(clazzObj, propertyName)
+							if(pm != null) {
+								propsCache.put(propertyName, pm)
+							}
+						}
+						
+						
+						if(pm == null) throw new RuntimeException("No property for class "+ clazzObj + " : " + propertyName)
+						
+						sb.append('\t')
+						.append(CompactStringSerializer.oldVersionFilter(pm.getURI(), false));
+//						if(pm == null) {
+//							sb.append('|').append(v.getClass().getCanonicalName());
+//						}
+						sb.append("=\"")
+							.append(v)
+							.append('"');
+								
+					}
+					
+					
+					cheatWriter.write(BlockCompactStringSerializer.BLOCK_SEPARATOR_WITH_NLINE)
+					cheatWriter.write(sb.toString())
+					cheatWriter.write("\n")
+					
+				
 				}
 				
-				serializer.startBlock()
-				serializer.writeGraphObject(g)
-				serializer.endBlock()
+				
+				if(serializer != null) {
+					
+					serializer.startBlock()
+					serializer.writeGraphObject(g)
+					serializer.endBlock()
+					
+				}
 				
 				blocks++
 				
 			}
 						
-			serializer.close()
+			if(serializer != null) serializer.close()
+			
+			if(cheatWriter != null) cheatWriter.close()
 			
 			csvReader.close()
 			
