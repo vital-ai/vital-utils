@@ -1,5 +1,6 @@
 package ai.vital.vitalutilcommands
 
+import java.util.zip.GZIPInputStream
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -420,7 +421,13 @@ class VitalImport extends AbstractUtil {
 					
 					try {
 						
-						inputStream = new BufferedInputStream(new FileInputStream(f))
+						inputStream = new FileInputStream(f)
+						
+						if(f.name.endsWith(".gz")) {
+							inputStream = new GZIPInputStream(inputStream)
+						}
+						
+						inputStream = new BufferedInputStream(inputStream)
 						
 						service.bulkImport(segmentObj, inputStream)
 															
