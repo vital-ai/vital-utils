@@ -1,6 +1,10 @@
 package ai.vital.vitalutilcommands
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.text.DecimalFormat;
 import java.util.zip.GZIPInputStream
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -19,6 +23,7 @@ import ai.vital.vitalservice.VitalStatus
 import ai.vital.vitalservice.factory.VitalServiceFactory
 import ai.vital.vitalservice.query.ResultList;
 import ai.vital.vitalservice.segment.VitalSegment;
+import ai.vital.vitalutilcommands.io.ProgressInputStream
 
 /**
  * Imports block file(s) into vital service segment
@@ -328,7 +333,18 @@ class VitalImport extends AbstractUtil {
 				for(int i = 0 ; i < filesObjs.size(); i++) {
 					File f = filesObjs[i]
 					
-					println "Checking file ${i+1} of ${filesObjs.size()}: ${f.absolutePath}"
+					long totalLength = 0
+					
+					
+					String uncompressedLengthString = ""
+					if(f.name.endsWith('.gz')) {
+						totalLength = getGZIPUncompressedLengthUnreliable(f)
+						uncompressedLengthString = " / uncompressed length: " + humanReadableByteCount(totalLength)
+					} else {
+						totalLength = f.length()
+					}
+					
+					println "Checking file ${i+1} of ${filesObjs.size()}: ${f.absolutePath}, length: ${humanReadableByteCount(f.length())} ${uncompressedLengthString}"
 					
 					if(blockFileNameFilter.accept(f)) {
 						
@@ -338,7 +354,7 @@ class VitalImport extends AbstractUtil {
 						
 						try {
 							
-							iterator = BlockCompactStringSerializer.getBlocksIterator(f)
+							iterator = BlockCompactStringSerializer.getBlocksIterator(openReader(f, verbose ? new UpdateProgressListener(totalLength) : null))
 						
 							for(VitalBlock block : iterator) {
 								c++
@@ -415,8 +431,19 @@ class VitalImport extends AbstractUtil {
 					
 					File f = filesObjs[i]
 					
-					println "Importing file ${i+1} of ${filesObjs.size()}: ${f.absolutePath}"
-
+					long totalLength = 0
+					
+					
+					String uncompressedLengthString = ""
+					if(f.name.endsWith('.gz')) {
+						totalLength = getGZIPUncompressedLengthUnreliable(f)
+						uncompressedLengthString = " / uncompressed length: " + humanReadableByteCount(totalLength)
+					} else {
+						totalLength = f.length()
+					}
+						
+					println "Importing file ${i+1} of ${filesObjs.size()}: ${f.absolutePath}, file length: ${ humanReadableByteCount(f.length() ) } ${uncompressedLengthString}"
+					
 					InputStream inputStream = null;
 					
 					try {
@@ -429,8 +456,19 @@ class VitalImport extends AbstractUtil {
 						
 						inputStream = new BufferedInputStream(inputStream)
 						
+						
+						if(verbose) {
+							ProgressInputStream pis = new ProgressInputStream(inputStream)
+							pis.addPropertyChangeListener(new UpdateProgressListener(totalLength))
+							inputStream = pis
+							
+						}
+						
 						service.bulkImport(segmentObj, inputStream)
+						
+						println "Bulk import complete"
 															
+						
 					} finally {
 					
 						IOUtils.closeQuietly(inputStream)
@@ -573,6 +611,72 @@ class VitalImport extends AbstractUtil {
 			service.save(segment, gos, true)
 		}
 			
+	}
+	
+	//refresh every 100 miliseconds ? 
+	static class UpdateProgressListener implements PropertyChangeListener {
+
+		final long total
+		
+		DecimalFormat df = new DecimalFormat('0.0')
+		
+		String lastString = null;
+		
+		long lastUpdateTime = 0L
+		
+		public UpdateProgressListener(long totalLength) {
+			this.total = totalLength
+		}
+		
+		@Override
+		public void propertyChange(PropertyChangeEvent evt) {
+
+			long t = System.currentTimeMillis()
+			
+			long delta = Math.abs( t - lastUpdateTime )
+			
+			
+			long readB = ((Long)evt.getNewValue()).longValue();
+			
+			boolean done = readB == total
+			
+			if(delta > 1000L || lastString == null || done) {
+				
+				double fraction = ((double)readB / (double)total)			
+				
+				String newString = df.format( fraction * 100d) + "%"
+				
+				if(lastString == null || !lastString.equals(newString) ) {
+					
+					
+//					if(lastString != null) {
+//						String b = ""
+//						for(int i = 0; i < lastString.length() ; i++) {
+//							b += "\b"
+//						}
+//						print b
+//					}
+//					
+					println newString
+					
+
+					System.out.flush()
+					
+					lastString = newString
+										
+					lastUpdateTime = t
+					
+				}
+					
+			}
+						
+//			if(done) {
+//				print "\n"
+//				System.out.flush()
+//			}
+			
+		}
+		
 	}
 
 }
