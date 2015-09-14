@@ -5,9 +5,9 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
 	<classpathentry exported="true" kind="con" path="GROOVY_DSL_SUPPORT"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
-	<classpathentry kind="var" path="VITAL_HOME/vital-domain/VitalDomain-groovy-0.2.254.jar"/>
-	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/command/VitalSigns-0.2.254.jar"/>
-	<classpathentry kind="var" path="VITAL_HOME/vitalservice/VitalService-0.2.254.jar"/>
+	<classpathentry kind="var" path="VITAL_HOME/vital-domain/VitalDomain-groovy-0.2.255.jar"/>
+	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/command/VitalSigns-0.2.255.jar"/>
+	<classpathentry kind="var" path="VITAL_HOME/vitalservice/VitalService-0.2.255.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/commons-cli-1.2.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/commons-codec-1.5.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/commons-collections-3.2.1.jar"/>
@@ -35,8 +35,11 @@
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/xml-apis-1.4.01.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/groovy-2.5.0/groovy-all-2.5.0-SNAPSHOT.jar"/>
 	<classpathentry kind="lib" path="lib/javacsv-2.1/javacsv-2.1.jar"/>
-	<classpathentry kind="lib" path="lib/asciidoctor-java-integration-0.1.4/asciidoctor-java-integration-0.1.4.jar"/>
-	<classpathentry kind="lib" path="lib/jruby-1.7.4/jruby-complete-1.7.4.jar"/>
+	<classpathentry kind="lib" path="lib/asciidoctorj-1.5.2/asciidoctorj-1.5.2.jar"/>
+	<classpathentry kind="lib" path="lib/asciidoctorj-1.5.2/asciidoctorj-epub3-1.5.0-alpha.4.jar"/>
+	<classpathentry kind="lib" path="lib/asciidoctorj-1.5.2/asciidoctorj-pdf-1.5.0-alpha.6.jar"/>
+	<classpathentry kind="lib" path="lib/asciidoctorj-1.5.2/jcommander-1.35.jar"/>
+	<classpathentry kind="lib" path="lib/jruby-1.7.16.1/jruby-complete-1.7.16.1.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/groovy-2.5.0/xstream-1.4.8.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/jimfs-1.0.jar"/>
 	<classpathentry kind="var" path="VITAL_HOME/vitalsigns/lib/guava-18.0.jar"/>
