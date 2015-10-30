@@ -20,6 +20,7 @@ import ai.vital.vitalsigns.meta.GraphContext;
 import ai.vital.vitalsigns.model.AggregationResult;
 import ai.vital.vitalsigns.model.GraphMatch;
 import ai.vital.vitalsigns.model.GraphObject;
+import ai.vital.vitalsigns.ontology.VitalCoreOntology;
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer;
 
 import java.util.Map.Entry
@@ -377,12 +378,19 @@ class VitalQuery extends AbstractUtil {
 
 				for(Entry<String, Object> e : gm.getPropertiesMap().entrySet()) {
 
+					//skip URI and vitaltype properties
+					if(VitalCoreOntology.URIProp.getURI().equals(e.key) || VitalCoreOntology.vitaltype.getURI().equals(e.key)) {
+						continue;
+					}
+					
 					def un = e.getValue().unwrapped()
 					
 					if(!(un instanceof URIProperty)) continue
 					
+					
 					URIProperty uri = un
 					String u = uri.get()
+					
 					if(uris.add(u)) {
 						urisList.add(URIProperty.withString(u))
 					}
