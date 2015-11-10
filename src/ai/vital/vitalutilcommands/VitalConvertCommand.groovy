@@ -10,7 +10,6 @@ import java.util.zip.GZIPOutputStream
 
 import org.apache.commons.io.IOUtils;
 
-import ai.vital.vitalservice.model.App
 import ai.vital.vitalsigns.model.property.BooleanProperty;
 import ai.vital.vitalsigns.model.property.DateProperty;
 import ai.vital.vitalsigns.model.property.DoubleProperty;
@@ -29,6 +28,7 @@ import ai.vital.vitalsigns.block.CompactStringSerializer;
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer.BlockIterator
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer.VitalBlock
 import ai.vital.vitalsigns.model.GraphObject;
+import ai.vital.vitalsigns.model.VitalApp;
 import ai.vital.vitalsigns.ontology.VitalCoreOntology;
 import ai.vital.vitalsigns.properties.PropertyMetadata;
 import ai.vital.vitalsigns.rdf.VitalNTripleIterator
@@ -526,7 +526,7 @@ class VitalConvertCommand extends AbstractUtil {
 //					
 //				}
 				
-				String URI = autogenerateURI ? URIGenerator.generateURI((App)null, clazzObj) : vs[URIColumn]
+				String URI = autogenerateURI ? URIGenerator.generateURI((VitalApp)null, clazzObj) : vs[URIColumn]
 				
 				if(URI.isEmpty()) error("Record ${csvReader.currentRecord}: empty URI, column ${URIColumn}")
 				

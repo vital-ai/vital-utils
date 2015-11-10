@@ -104,7 +104,7 @@ class VitalMerge extends AbstractUtil {
 		
 		for( Iterator<DomainOntology> iter = ontologies.iterator(); iter.hasNext(); ) {
 			DomainOntology d = iter.next()
-			if(d.uri == VitalOntology.NS_BARE) iter.remove()
+			if(d.uri == VitalOntology.NS) iter.remove()
 		}
 		
 		if(ontologies.size() > 1) error "Vitalsigns is expected to have exactly 0 or 1 domain ontology"

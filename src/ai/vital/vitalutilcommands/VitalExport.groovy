@@ -9,10 +9,11 @@ import ai.vital.vitalservice.factory.VitalServiceFactory;
 import ai.vital.vitalservice.query.ResultElement;
 import ai.vital.vitalservice.query.ResultList;
 import ai.vital.vitalservice.query.VitalExportQuery
-import ai.vital.vitalservice.segment.VitalSegment
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer
 import ai.vital.vitalsigns.model.GraphObject;
 import ai.vital.vitalsigns.model.VITAL_Node
+import ai.vital.vitalsigns.model.VitalSegment
+import ai.vital.vitalsigns.model.VitalServiceKey;
 import ai.vital.vitalsigns.ontology.VitalCoreOntology;
 
 import java.util.zip.GZIPOutputStream
@@ -47,6 +48,7 @@ class VitalExport extends AbstractUtil {
 			b longOpt: "block", "block size (only .vital[.gz]), default ${DEFAULT_BLOCK_SIZE}", args: 1, required: false
 			bulk longOpt: "bulk-mode", "bulk export data, only block compact string format", args: 0, required: false
 			bf longOpt: "bigFiles", "[true|false] flag, force big files flag (only vitalprime), default true", args: 1, required: false
+			sk longOpt: 'service-key', "vital service key, default ${defaultServiceKey}", args: 1, required: false
 			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 		}
 		
@@ -66,6 +68,8 @@ class VitalExport extends AbstractUtil {
 		def options = cli.parse(args)
 		
 		if(!options || options.h) return
+		
+		VitalServiceKey serviceKey = getVitalServiceKey(options)
 		
 		String exportBuilder = options.ex ? options.ex : null
 		
@@ -93,13 +97,13 @@ class VitalExport extends AbstractUtil {
 			
 			if(profile != null) {
 				println "Setting custom vital service profile: ${profile}"
-				VitalServiceFactory.setServiceProfile(profile)
 			} else {
-				println "Using default vital service profile..."
+				profile = VitalServiceFactory.DEFAULT_PROFILE
+				println "Using default vital service profile... ${VitalServiceFactory.DEFAULT_PROFILE}"
 			}
 			
-			VitalService service = VitalServiceFactory.getVitalService()
-			println "Obtained vital service, type: ${service.getEndpointType()}, organization: ${service.getOrganization().ID}, app: ${service.getApp().ID}"
+			VitalService service = VitalServiceFactory.openService(serviceKey, profile)
+			println "Obtained vital service, type: ${service.getEndpointType()}, organization: ${service.getOrganization().organizationID}, app: ${service.getApp().appID}"
 		
 			VitalStatus vs = service.doOperations(ops)
 			
@@ -143,22 +147,16 @@ class VitalExport extends AbstractUtil {
 		
 		if(profile != null) {
 			println "Setting custom vital service profile: ${profile}"
-			VitalServiceFactory.setServiceProfile(profile)
 		} else {
-			println "Using default vital service profile..."
+			println "Using default vital service profile... ${VitalServiceFactory.DEFAULT_PROFILE}"
+			profile = VitalServiceFactory.DEFAULT_PROFILE
 		}
 		
-		VitalService service = VitalServiceFactory.getVitalService()
-		println "Obtained vital service, type: ${service.getEndpointType()}, organization: ${service.getOrganization().ID}, app: ${service.getApp().ID}"
+		VitalService service = VitalServiceFactory.openService(serviceKey, profile)
+		println "Obtained vital service, type: ${service.getEndpointType()}, organization: ${service.getOrganization().organizationID}, app: ${service.getApp().appID}"
 		
 		
-		VitalSegment segmentObj = null;
-		for(VitalSegment s : service.listSegments()) {
-			if(s.ID== segment) {
-				segmentObj = s
-				break
-			}
-		}
+		VitalSegment segmentObj = service.getSegment(segment)
 		
 		if(!segmentObj) {
 			error "Segment not found: ${segment}"

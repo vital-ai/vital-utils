@@ -1,12 +1,13 @@
 package ai.vital.vitalutilcommands
 
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer
+import ai.vital.vitalsigns.model.VitalApp
+import ai.vital.vitalsigns.model.VitalServiceKey;
 import ai.vital.vitalutilcommands.io.ProgressInputStream;
 import groovy.transform.CompileStatic;
 
 import java.beans.PropertyChangeListener;
 import java.util.zip.GZIPInputStream
-
 import java.util.zip.GZIPOutputStream
 
 import org.apache.commons.io.FileUtils
@@ -16,9 +17,28 @@ class AbstractUtil {
 
 	static String[] extensions = ['vital.gz', 'vital', 'gz'].toArray(new String[3]);
 	
+	static String defaultServiceKey = 'aaaa-aaaa-aaaa'
+	
 	static long t() { return System.currentTimeMillis()}
 	
 	public static boolean exit_not_exception = true 
+	
+	static VitalServiceKey getVitalServiceKey(def options) {
+		
+		String serviceKey = options.sk ? options.sk : null
+		
+		if(serviceKey) {
+			println "service key: ${serviceKey}"
+		} else {
+			serviceKey = defaultServiceKey
+			println "default service key: ${defaultServiceKey}"
+		}
+		
+		VitalServiceKey serviceKeyObject = new VitalServiceKey().generateURI((VitalApp) null)
+		serviceKeyObject.key = serviceKey
+		
+		return serviceKeyObject
+	}
 	
 	public static List<File> getBlockFilesFromPath(File path) {
 		

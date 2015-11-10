@@ -343,6 +343,7 @@ public class HierarchicalCategories {
 		
 	}
 
+	/*
 	private void printTaxonomy() {
 
 		printNode(rootNode);
@@ -376,6 +377,7 @@ public class HierarchicalCategories {
 		}
 		
 	}
+	*/
 
 
 	public TaxonomyNode getRootNode() {

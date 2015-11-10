@@ -1,6 +1,7 @@
 package ai.vital.vitalutilcommands
 
 import java.util.Map.Entry
+
 import org.apache.commons.io.FileUtils;
 
 import ai.vital.vitalservice.EndpointType;
@@ -23,11 +24,13 @@ import ai.vital.vitalservice.query.VitalGraphQuery
 import ai.vital.vitalservice.query.VitalGraphQueryPropertyCriterion;
 import ai.vital.vitalservice.query.VitalGraphQueryTypeCriterion
 import ai.vital.vitalservice.query.VitalSelectQuery
-import ai.vital.vitalservice.segment.VitalSegment;
 import ai.vital.vitalsigns.VitalSigns;
 import ai.vital.vitalsigns.meta.PathElement
 import ai.vital.vitalsigns.model.GraphMatch;
 import ai.vital.vitalsigns.model.GraphObject;
+import ai.vital.vitalsigns.model.VitalApp
+import ai.vital.vitalsigns.model.VitalSegment
+import ai.vital.vitalsigns.model.VitalServiceKey;
 
 
 class VitalDeleteCommand extends AbstractUtil {
@@ -44,6 +47,7 @@ class VitalDeleteCommand extends AbstractUtil {
 			e longOpt: "expanded", "delete expanded", args: 0, required: false
 			c longOpt: "check", "check the objects list (do not delete)", args: 0, required: false
 			b longOpt: "background", "delete in as background job (vitalprime only)", args: 0, required: false
+			sk longOpt: 'service-key', "vital service key, default ${defaultServiceKey}", args: 1, required: false
 			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 		}
 		
@@ -70,6 +74,8 @@ class VitalDeleteCommand extends AbstractUtil {
 		
 		File queryScriptFile = options.q ? new File(options.q) : null;
 		
+		VitalServiceKey vitalServiceKey = getVitalServiceKey(options)
+		
 		String segment = options.s ? options.s : null
 		
 		if(queryScriptFile != null && segment != null) {
@@ -84,11 +90,12 @@ class VitalDeleteCommand extends AbstractUtil {
 				
 		if(profile != null) {
 			println "Setting custom vital service profile: ${profile}"
-			VitalServiceFactory.setServiceProfile(profile)
 		} else {
-			println "Using default vital service profile..."
+			profile = VitalServiceFactory.DEFAULT_PROFILE
+			println "Using default vital service profile... ${profile}"
 		}
-		VitalService service = VitalServiceFactory.getVitalService()
+		
+		VitalService service = VitalServiceFactory.openService(vitalServiceKey, profile)
 		EndpointType et = service.getEndpointType();
 		println "Obtained vital service, type: ${et}"
 		
@@ -163,40 +170,37 @@ class VitalDeleteCommand extends AbstractUtil {
 			
 				
 		}
-		
+
+		VitalSegment segmentObject = null
+				
 		if(segment != null) {
 			println "Segment: ${segment}"
-			VitalSegment found = null
-			for(VitalSegment s : service.listSegments() ) {
-				if(s.ID == segment) {
-					found = s
-					break
-				}
-			}
+
+			segmentObject = service.getSegment(segment)
 			
-			if(found == null) {
+			if(segmentObject == null) {
 				error("Segment not found: ${segment}")
 				return
 			}
+			
 		}
 				
 		println "Expanded ? ${expanded}"
 		println "Check ? ${check}"
 		
 
-		if(segment != null) {
+		if(segmentObject != null) {
 			
 			if(check) {
 				println "Whole segment: ${segment} will be purged, check=true - exiting."
 				return
 			}
 			
-			if(segment != null) {
-				//execute a simple delete that will purge all segment
-				VitalStatus status = service.delete(URIProperty.withString(VitalService.MATCH_ALL_PREFIX + segment))
-				println "status: ${status}"
-				return
-			}
+			//execute a simple delete that will purge all segment
+			URIProperty matchAllURI = URIProperty.getMatchAllURI(segmentObject)
+			VitalStatus status = service.delete(matchAllURI)
+			println "status: ${status}"
+			return
 			
 		}		
 		

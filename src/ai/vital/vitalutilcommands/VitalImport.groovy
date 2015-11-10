@@ -13,6 +13,8 @@ import ai.vital.vitalservice.EndpointType;
 import ai.vital.vitalsigns.model.property.URIProperty;
 import ai.vital.vitalsigns.model.GraphObject
 import ai.vital.vitalsigns.model.VITAL_Node;
+import ai.vital.vitalsigns.model.VitalSegment
+import ai.vital.vitalsigns.model.VitalServiceKey;
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer.BlockIterator;
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer.VitalBlock
@@ -22,7 +24,6 @@ import ai.vital.vitalservice.VitalService;
 import ai.vital.vitalservice.VitalStatus
 import ai.vital.vitalservice.factory.VitalServiceFactory
 import ai.vital.vitalservice.query.ResultList;
-import ai.vital.vitalservice.segment.VitalSegment;
 import ai.vital.vitalutilcommands.io.ProgressInputStream
 
 /**
@@ -48,6 +49,7 @@ class VitalImport extends AbstractUtil {
 			c longOpt: "check", "check input files only - DOES NOT IMPORT, mutually exclusive with --skip-check", args: 0, required: false
 			sc longOpt: 'skip-check', "skips the default data validation, mutually exclusive with --check", args: 0, required: false 
 			bf longOpt: "bigFiles", "[true|false] flag, force big files flag (only vitalprime), default true", args: 1, required: false
+			sk longOpt: 'service-key', "vital service key, default ${defaultServiceKey}", args: 1, required: false
 			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 			//bf longOpt: 'bigfiles', "the flag to import the data in background, after they're uploaded", args: 0 , required: false
 		}
@@ -75,6 +77,8 @@ class VitalImport extends AbstractUtil {
 		
 		String importBuilder = options.im ? options.im : null
 		
+		VitalServiceKey serviceKey = getVitalServiceKey(options)
+		
 		if(importBuilder != null) {
 			
 			File importBuilderFile = new File(importBuilder)
@@ -97,13 +101,13 @@ class VitalImport extends AbstractUtil {
 			
 			if(profile != null) {
 				println "Setting custom vital service profile: ${profile}"
-				VitalServiceFactory.setServiceProfile(profile)
 			} else {
-				println "Using default vital service profile..."
+				profile = VitalServiceFactory.DEFAULT_PROFILE
+				println "Using default vital service profile... ${profile}"
 			}
 			
-			VitalService service = VitalServiceFactory.getVitalService()
-			println "Obtained vital service, type: ${service.getEndpointType()}, organization: ${service.getOrganization().ID}, app: ${service.getApp().ID}"
+			VitalService service = VitalServiceFactory.openService(serviceKey, profile)
+			println "Obtained vital service, type: ${service.getEndpointType()}, organization: ${service.getOrganization().organizationID}, app: ${service.getApp().appID}"
 		
 			VitalStatus vs = service.doOperations(ops)
 			
@@ -210,21 +214,15 @@ class VitalImport extends AbstractUtil {
 		
 		if(profile != null) {
 			println "Setting custom vital service profile: ${profile}"
-			VitalServiceFactory.setServiceProfile(profile)
 		} else {
-			println "Using default vital service profile..."
+			profile = VitalServiceFactory.DEFAULT_PROFILE
+			println "Using default vital service profile... ${profile}"
 		}
 		
-		VitalService service = VitalServiceFactory.getVitalService()
+		VitalService service = VitalServiceFactory.openService(serviceKey, profile)
 		println "Obtained vital service, type: ${service.getEndpointType()}"
 		
-		VitalSegment segmentObj = null;
-		for(VitalSegment s : service.listSegments()) {
-			if(s.ID== segment) {
-				segmentObj = s
-				break
-			}
-		}
+		VitalSegment segmentObj = service.getSegment(segment)
 		
 		if(!segmentObj) {
 			error "Segment not found: ${segment}"
@@ -418,6 +416,8 @@ class VitalImport extends AbstractUtil {
 			
 			if(bulkMode) {
 				
+				long total = t()
+				
 				println "Importing in bulk mode ... (without existing objects check)"
 				
 				for(int i = 0 ; i < filesObjs.size(); i++) {
@@ -428,6 +428,8 @@ class VitalImport extends AbstractUtil {
 				}
 				
 				for(int i = 0 ; i < filesObjs.size(); i++) {
+					
+					long s = t();
 					
 					File f = filesObjs[i]
 					
@@ -466,7 +468,7 @@ class VitalImport extends AbstractUtil {
 						
 						service.bulkImport(segmentObj, inputStream)
 						
-						println "Bulk import complete"
+						println "Bulk import complete, time: ${t() - s}ms"
 															
 						
 					} finally {
@@ -474,6 +476,12 @@ class VitalImport extends AbstractUtil {
 						IOUtils.closeQuietly(inputStream)
 					
 					}
+					
+				}
+				
+				if(filesObjs.size() > 1) {
+					
+					println "Total time: ${t() - total}ms"
 					
 				}
 				
@@ -657,7 +665,13 @@ class VitalImport extends AbstractUtil {
 //						print b
 //					}
 //					
-					println newString
+					String out = newString
+					
+					if(lastUpdateTime > 0L) {
+						out += " delta ${t - lastUpdateTime}ms"
+					}
+					
+					println out
 					
 
 					System.out.flush()

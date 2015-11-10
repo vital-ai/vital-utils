@@ -9,12 +9,10 @@
 package ai.vital.predict.categories;
 
 import java.io.BufferedOutputStream;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 
 import ai.vital.vitalsigns.model.VITAL_Category;
 import ai.vital.vitalsigns.model.Edge_hasChildCategory;

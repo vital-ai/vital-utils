@@ -12,6 +12,7 @@ import ai.vital.vitalservice.factory.VitalServiceFactory;
 import ai.vital.vitalservice.query.ResultElement;
 import ai.vital.vitalservice.query.ResultList;
 import ai.vital.vitalsigns.model.VITAL_Node;
+import ai.vital.vitalsigns.model.VitalServiceKey;
 
 class VitalFtpCommand extends AbstractUtil {
 
@@ -39,6 +40,7 @@ class VitalFtpCommand extends AbstractUtil {
 		putCLI.with {
 			f longOpt: "file", "local file to upload", args: 1, required: true
 			ow longOpt: "overwrite", "overwrite remote file if exists", args: 0, required: false
+			sk longOpt: 'service-key', "vital service key, default ${defaultServiceKey}", args: 1, required: false
 			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 		}
 		cmd2CLI.put(CMD_PUT, putCLI)
@@ -48,12 +50,14 @@ class VitalFtpCommand extends AbstractUtil {
 			n longOpt: "name", "remote file name", args: 1, required: true
 			d longOpt: "directory", "output directory to save the file", args: 1, required: true
 			ow longOpt: "overwrite", "overwrite the output file if exists", args: 0, required: false
+			sk longOpt: 'service-key', "vital service key, default ${defaultServiceKey}", args: 1, required: false
 			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 		}
 		cmd2CLI.put(CMD_GET, getCLI)
 		
 		def lsCLI = new CliBuilder(usage: "${VF} ${CMD_LS} [options]")
 		lsCLI.with {
+			sk longOpt: 'service-key', "vital service key, default ${defaultServiceKey}", args: 1, required: false
 			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 		}
 		cmd2CLI.put(CMD_LS, lsCLI)
@@ -61,12 +65,14 @@ class VitalFtpCommand extends AbstractUtil {
 		def delCLI = new CliBuilder(usage: "${VF} ${CMD_DEL} [options]")
 		delCLI.with {
 			n longOpt: "name", "remote file name", args: 1, required: true
+			sk longOpt: 'service-key', "vital service key, default ${defaultServiceKey}", args: 1, required: false
 			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 		}
 		cmd2CLI.put(CMD_DEL, delCLI)
 	
 		def purgeCLI = new CliBuilder(usage: "${VF} ${CMD_PURGE} (no options)")
 		purgeCLI.with {
+			sk longOpt: 'service-key', "vital service key, default ${defaultServiceKey}", args: 1, required: false
 			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 		}
 		cmd2CLI.put(CMD_PURGE, purgeCLI)
@@ -115,15 +121,17 @@ class VitalFtpCommand extends AbstractUtil {
 		}
 		
 		String profile = options.prof ? options.prof : null
+		
+		VitalServiceKey serviceKey = getVitalServiceKey(options)
 
 		if(profile != null) {
 			println "Setting custom vital service profile: ${profile}"
-			VitalServiceFactory.setServiceProfile(profile)
 		} else {
-			println "Using default vital service profile..."
+			println "Using default vital service profile... ${VitalServiceFactory.DEFAULT_PROFILE}"
+			profile = VitalServiceFactory.DEFAULT_PROFILE
 		}
 		
-		VitalService service = VitalServiceFactory.getVitalService()
+		VitalService service = VitalServiceFactory.openService(serviceKey, profile)
 		
 		if(service.getEndpointType() != EndpointType.VITALPRIME) {
 			error "${VF} only works with vitalprime"

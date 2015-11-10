@@ -20,6 +20,7 @@ import ai.vital.vitalsigns.meta.GraphContext;
 import ai.vital.vitalsigns.model.AggregationResult;
 import ai.vital.vitalsigns.model.GraphMatch;
 import ai.vital.vitalsigns.model.GraphObject;
+import ai.vital.vitalsigns.model.VitalServiceKey;
 import ai.vital.vitalsigns.ontology.VitalCoreOntology;
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer;
 
@@ -46,6 +47,7 @@ class VitalQuery extends AbstractUtil {
 			s longOpt: "tosparql", "output the query as sparql instead of executing it", args: 0, required: false
 			g longOpt: "group", "group graph matches into blocks, explicit boolean flag parameter [true|false], requires mainProp, only graph query", args: 1, required: false
 			mp longOpt: "mainProp", "main bound property, required when --group=true", args: 1, required: false
+			sk longOpt: 'service-key', "vital service key, default ${defaultServiceKey}", args: 1, required: false
 			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 		}
 		
@@ -66,7 +68,9 @@ class VitalQuery extends AbstractUtil {
 
 		if(!options || options.h) return
 
-			File queryScriptFile = new File(options.q);
+		File queryScriptFile = new File(options.q);
+		
+		VitalServiceKey serviceKey = getVitalServiceKey(options)
 
 		boolean outputSparql = options.s ? true : false
 
@@ -143,9 +147,9 @@ class VitalQuery extends AbstractUtil {
 
 		if(serviceProfile != null) {
 			println "Setting service profile: ${serviceProfile}"
-			VitalServiceFactory.setServiceProfile(serviceProfile)
 		} else {
-			println "Default service profile"
+			serviceProfile = VitalServiceFactory.DEFAULT_PROFILE
+			println "Default service profile ${serviceProfile}"
 		}
 
 		ai.vital.vitalservice.query.VitalQuery queryObject = null
@@ -249,7 +253,7 @@ class VitalQuery extends AbstractUtil {
 			queryObject.returnSparqlString = false
 		}
 
-		VitalService service = VitalServiceFactory.getVitalService()
+		VitalService service = VitalServiceFactory.openService(serviceKey, serviceProfile)
 		println "Obtained vital service, type: ${service.endpointType}"
 
 		ResultList rl = null;
