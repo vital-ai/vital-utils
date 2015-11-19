@@ -74,6 +74,15 @@ if(tripleStoreMod.exists() && tripleStoreMod.isDirectory()) {
   }
 }
 
+File sqlMod = new File(vitalhome, 'vital-sql')
+if(sqlMod.exists() && sqlMod.isDirectory()) {
+  sqlMod .eachFileRecurse(FILES) {
+    if(it.name.endsWith(".jar")) {
+      jars.add(it.absolutePath)
+    }
+  }
+}
+
 
 new File(vitalhome, "domain-groovy-jar").eachFile(FILES) {
   if(it.name.endsWith(".jar")) {

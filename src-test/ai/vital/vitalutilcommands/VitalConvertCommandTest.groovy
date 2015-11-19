@@ -7,29 +7,29 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 
 import com.csvreader.CsvWriter;
+import com.vitalai.domain.nlp.Document
+import com.vitalai.domain.nlp.Edge_hasEntity
+import com.vitalai.domain.nlp.Entity
 
-import ai.vital.domain.Document;
-import ai.vital.domain.Edge_hasEntity;
-import ai.vital.domain.Entity
-import ai.vital.vitalservice.model.App
 import ai.vital.vitalsigns.VitalSigns;
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer;
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer.BlockIterator;
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer.VitalBlock;
 import ai.vital.vitalsigns.model.GraphObject
+import ai.vital.vitalsigns.model.VitalApp;
 import junit.framework.TestCase;
 
 class VitalConvertCommandTest extends AbstractUtilTest {
 
 	File tempDir = null
-	App app = null
+	VitalApp app = null
 
 	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
 		AbstractUtil.exit_not_exception = false
 		tempDir = Files.createTempDirectory("vitalutil" ).toFile()
-		app = new App(ID: 'app', customerID: 'customer')
+		app = VitalApp.withId('app')
 	}
 	
 	@Override

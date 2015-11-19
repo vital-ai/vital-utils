@@ -14,7 +14,7 @@ def vitalhome = System.getenv('VITAL_HOME')
 
 def homeDir = vitalhome + "/" + "vitalutil" + "/"
 
-def mainClass = 'ai.vital.vitalutilcommands.VitalQuery'
+def mainClass = 'ai.vital.vitalutilcommands.VitalPrettyPrintCommand'
 
 List jars = []
 
@@ -53,32 +53,6 @@ new File(vitalhome, "vitalservice").eachFileRecurse(FILES) {
 new File(vitalhome, "vital-lucene").eachFileRecurse(FILES) {
   if(it.name.endsWith(".jar")) {
     jars.add(it.absolutePath)
-  }
-}
-
-if( new File(vitalhome, "vital-dynamodb").exists() ) {
-  new File(vitalhome, "vital-dynamodb").eachFileRecurse(FILES) {
-    if(it.name.endsWith(".jar")) {
-      jars.add(it.absolutePath)
-    }
-  }
-}
-
-File tripleStoreMod = new File(vitalhome, 'vital-triplestore')
-if(tripleStoreMod.exists() && tripleStoreMod.isDirectory()) {
-  tripleStoreMod .eachFileRecurse(FILES) {
-    if(it.name.endsWith(".jar")) {
-      jars.add(it.absolutePath)
-    }
-  }
-}
-
-File sqlMod = new File(vitalhome, 'vital-sql')
-if(sqlMod.exists() && sqlMod.isDirectory()) {
-  sqlMod .eachFileRecurse(FILES) {
-    if(it.name.endsWith(".jar")) {
-      jars.add(it.absolutePath)
-    }
   }
 }
 
