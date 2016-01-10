@@ -37,7 +37,7 @@ class VitalImport extends AbstractUtil {
 	
 	static main(args) {
 	
-		def cli = new CliBuilder(usage: 'vitalimport [options]')
+		def cli = new CliBuilder(usage: 'vitalimport [options]', stopAtNonOption: false)
 		cli.with {
 			h longOpt: "help", "Show usage information", args: 0, required: false
 			im longOpt: "import-builder", "Import builder file (.builder or .groovy extension), overrides other parameters except profile", args: 1, required: false

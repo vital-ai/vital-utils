@@ -16,7 +16,7 @@ class VitalDataMigrate extends AbstractUtil {
 		String vitalHome = System.getenv('VITAL_HOME')
 		if(!vitalHome) { error("VITAL_HOME not set!") }
 		
-		def cli = new CliBuilder(usage: CMD + ' [options]')
+		def cli = new CliBuilder(usage: CMD + ' [options]', stopAtNonOption: false)
 		cli.with {
 			h longOpt: 'help', 'display usage', args: 0, required: false
 			i longOpt: "input", "overrides path in a builder, .vital[.gz] file", args: 1, required: false

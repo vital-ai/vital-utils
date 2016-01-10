@@ -36,7 +36,7 @@ class VitalFtpCommand extends AbstractUtil {
 	
 	static {
 		
-		def putCLI = new CliBuilder(usage: "${VF} ${CMD_PUT} [options]")
+		def putCLI = new CliBuilder(usage: "${VF} ${CMD_PUT} [options]", stopAtNonOption: false)
 		putCLI.with {
 			f longOpt: "file", "local file to upload", args: 1, required: true
 			ow longOpt: "overwrite", "overwrite remote file if exists", args: 0, required: false
@@ -45,7 +45,7 @@ class VitalFtpCommand extends AbstractUtil {
 		}
 		cmd2CLI.put(CMD_PUT, putCLI)
 		
-		def getCLI = new CliBuilder(usage: "${VF} ${CMD_GET} [options]")
+		def getCLI = new CliBuilder(usage: "${VF} ${CMD_GET} [options]", stopAtNonOption: false)
 		getCLI.with {
 			n longOpt: "name", "remote file name", args: 1, required: true
 			d longOpt: "directory", "output directory to save the file", args: 1, required: true
@@ -55,14 +55,14 @@ class VitalFtpCommand extends AbstractUtil {
 		}
 		cmd2CLI.put(CMD_GET, getCLI)
 		
-		def lsCLI = new CliBuilder(usage: "${VF} ${CMD_LS} [options]")
+		def lsCLI = new CliBuilder(usage: "${VF} ${CMD_LS} [options]", stopAtNonOption: false)
 		lsCLI.with {
 			sk longOpt: 'service-key', "vital service key, default ${defaultServiceKey}", args: 1, required: false
 			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 		}
 		cmd2CLI.put(CMD_LS, lsCLI)
 		
-		def delCLI = new CliBuilder(usage: "${VF} ${CMD_DEL} [options]")
+		def delCLI = new CliBuilder(usage: "${VF} ${CMD_DEL} [options]", stopAtNonOption: false)
 		delCLI.with {
 			n longOpt: "name", "remote file name", args: 1, required: true
 			sk longOpt: 'service-key', "vital service key, default ${defaultServiceKey}", args: 1, required: false
@@ -70,7 +70,7 @@ class VitalFtpCommand extends AbstractUtil {
 		}
 		cmd2CLI.put(CMD_DEL, delCLI)
 	
-		def purgeCLI = new CliBuilder(usage: "${VF} ${CMD_PURGE} (no options)")
+		def purgeCLI = new CliBuilder(usage: "${VF} ${CMD_PURGE} (no options)", stopAtNonOption: false)
 		purgeCLI.with {
 			sk longOpt: 'service-key', "vital service key, default ${defaultServiceKey}", args: 1, required: false
 			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false

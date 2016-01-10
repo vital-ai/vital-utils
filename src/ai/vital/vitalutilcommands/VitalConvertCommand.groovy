@@ -59,7 +59,7 @@ class VitalConvertCommand extends AbstractUtil {
 		if(!domainJarDir.exists()) error "Domain jar \$VITAL_HOME/domain-groovy-jar directory does not exist: ${domainJarDir.absolutePath}"
 		if(!domainJarDir.isDirectory()) error "Domain jar directory path \$VITAL_HOME/domain-groovy-jar exists but is not a directory: ${domainJarDir.absolutePath}"
 		
-		def cli = new CliBuilder(usage: 'vitalconvert [options]')
+		def cli = new CliBuilder(usage: 'vitalconvert [options]', stopAtNonOption: false)
 		cli.with {
 			h longOpt: 'help', 'display usage', args: 0, required: false
 			m longOpt: 'map', "map file, required with block -> csv conversion", args: 1, required: false

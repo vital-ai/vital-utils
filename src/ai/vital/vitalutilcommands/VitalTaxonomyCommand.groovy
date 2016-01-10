@@ -13,7 +13,7 @@ class VitalTaxonomyCommand {
 
 	public static void main(String[] args) {
 		
-		def cli = new CliBuilder(usage: 'vitaltaxonomy ...');
+		def cli = new CliBuilder(usage: 'vitaltaxonomy ...', stopAtNonOption: false);
 		
 		cli.with {
 			h longOpt: 'help', required: false, args: 0, 'Show usage information'

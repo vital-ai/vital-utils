@@ -38,7 +38,7 @@ class VitalExport extends AbstractUtil {
 		
 	public static void main(String[] args) {
 		
-		def cli = new CliBuilder(usage: 'vitalexport [options]')
+		def cli = new CliBuilder(usage: 'vitalexport [options]', stopAtNonOption: false)
 		cli.with {
 			h longOpt: "help", "Show usage information", args: 0, required: false
 			ex longOpt: "export-builder", "Export builder file (.builder or .groovy extension), overrides other parameters except profile", args: 1, required: false

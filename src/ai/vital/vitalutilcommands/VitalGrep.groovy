@@ -176,7 +176,7 @@ class VitalGrep {
 		grepper.init()
 		
 		
-		def cli = new CliBuilder(usage: 'vitalgrep [options]')
+		def cli = new CliBuilder(usage: 'vitalgrep [options]', stopAtNonOption: false)
 		cli.with {
 			h longOpt: "help", "Show usage information"
 			f longOpt: "file", "Input File", args:1

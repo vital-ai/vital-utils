@@ -19,7 +19,7 @@ class VitalPrettyPrintCommand extends AbstractUtil {
 	
 	static def main(args) {
 		
-		def cli = new CliBuilder(usage: 'vitalprettyprint [options]')
+		def cli = new CliBuilder(usage: 'vitalprettyprint [options]', stopAtNonOption: false)
 		cli.with {
 			i longOpt: 'input', "input block file", args: 1, required: true
 			s longOpt: 'style', "output style, one of: '${compact}' (default), '${rdf}, '${json}'", args: 1, required: false

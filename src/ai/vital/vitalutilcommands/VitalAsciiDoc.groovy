@@ -9,7 +9,7 @@ class VitalAsciiDoc extends AbstractUtil {
 	static def main(args) {
 		
 		
-		def cli = new CliBuilder(usage: 'vitalasciidoc [options]')
+		def cli = new CliBuilder(usage: 'vitalasciidoc [options]', stopAtNonOption: false)
 		cli.with {
 			h longOpt: 'help', 'display usage', args: 0, required: false
 			i longOpt: 'input', "asciidoc input file/directory", args: 1, required: true

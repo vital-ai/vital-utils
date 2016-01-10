@@ -67,6 +67,52 @@ new File(homeDir, "lib").eachFileRecurse(FILES) {
 
 //println System.getenv("PATH");
 
+
+/*** vital-groovy filter ***/
+def vitalGroovyDir = new File(vitalhome, 'vital-groovy')
+if(vitalGroovyDir.exists() && vitalGroovyDir.isDirectory()) {
+
+  for(Iterator<String> iterator = jars.iterator(); iterator.hasNext(); ) {
+  
+    String jar = iterator.next()
+
+    def n = new File(jar).name
+    
+    if(n.matches('groovy\\-all\\-.+\\.jar')) {
+    
+      iterator.remove()
+      
+    }
+  
+  }
+  
+  File groovyUpdated = null
+  
+  vitalGroovyDir.eachFileRecurse(FILES) {
+  
+  	if(it.name.endsWith('.jar')) {
+  	
+      if(it.name.matches('groovy\\-all\\-.+\\.jar')) {
+        groovyUpdated = it
+      }
+  	
+      jars.add(it.absolutePath);
+      
+    }
+    
+  }
+  
+  if(groovyUpdated == null) {
+    System.err.println "Alternative groovy jar not found in: ${vitalGroovyDir.absolutePath}"
+    return
+  }
+   
+  println "GROOVY jar replaced with vital version: ${groovyUpdated.absolutePath}"
+   
+}
+/*** end of vital-groovy filter ***/
+
+
 List cmd = ['java', '-cp', (String)jars.join(File.pathSeparator), mainClass];
 
 for(String a : args) {

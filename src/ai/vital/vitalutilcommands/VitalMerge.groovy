@@ -17,7 +17,7 @@ class VitalMerge extends AbstractUtil {
 
 	public static void main(String[] args) {
 		
-		def cli = new CliBuilder(usage: 'vitalmerge [options]')
+		def cli = new CliBuilder(usage: 'vitalmerge [options]', stopAtNonOption: false)
 		cli.with {
 			i longOpt: 'input', "input block file", args: 1, required: true
 			o longOpt: 'output', "output block file", args: 1, required: true

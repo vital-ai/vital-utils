@@ -39,7 +39,7 @@ class VitalDeleteCommand extends AbstractUtil {
 	
 	public static void main(String[] args) {
 		
-		def cli = new CliBuilder(usage: 'vitaldelete [options]')
+		def cli = new CliBuilder(usage: 'vitaldelete [options]', stopAtNonOption: false)
 		cli.with {
 			h longOpt: "help", "Show usage information", args: 0, required: false
 			q longOpt: "query", "select query file, limit and offet params are ignored! all results are to be deleted, mutually exclusive with segment,  .groovy or .builder", args: 1, required: false

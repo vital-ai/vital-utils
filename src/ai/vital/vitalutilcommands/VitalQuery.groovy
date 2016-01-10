@@ -38,7 +38,7 @@ class VitalQuery extends AbstractUtil {
 
 	public static void main(String[] args) {
 
-		def cli = new CliBuilder(usage: 'vitalquery [options]')
+		def cli = new CliBuilder(usage: 'vitalquery [options]', stopAtNonOption: false)
 		cli.with {
 			h longOpt: "help", "Show usage information", args: 0, required: false
 			o longOpt: "output", "output (.vital[.gz]|.sparql|.txt) block or sparql or txt file (depending on -s flag and query type), it prints to console otherwise, txt file for select distinct case only", args:1, required: false
