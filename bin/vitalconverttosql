@@ -1,0 +1,147 @@
+#!/usr/bin/env groovy
+
+import static groovy.io.FileType.FILES
+
+if ( ! System.getenv('VITAL_HOME') ) {
+	System.err.println("No VITAL_HOME environment variable set!");
+	return
+}
+
+def vitalhome = System.getenv('VITAL_HOME')
+
+// compare location of script with vital home to help detect if wrong directory set
+
+
+def homeDir = vitalhome + "/" + "vitalutil" + "/"
+
+def mainClass = 'ai.vital.vitalutilcommands.VitalConvertToSqlCommand'
+
+List jars = []
+
+
+new File(vitalhome, "vitalsigns/command").eachFileRecurse(FILES) {
+  if(it.name.endsWith(".jar")) {
+    jars.add(it.absolutePath)
+  }
+}
+
+new File(homeDir, 'command').eachFileRecurse(FILES) {
+  if(it.name.endsWith(".jar")) {
+    jars.add(it.absolutePath)
+  }
+}
+
+new File(vitalhome, 'vital-domain').eachFile(FILES){
+  if(it.name.endsWith(".jar")) {
+    jars.add(it.absolutePath)
+  }
+}
+
+
+new File(vitalhome, "vitalsigns/lib").eachFileRecurse(FILES) {
+  if(it.name.endsWith(".jar")) {
+    jars.add(it.absolutePath)
+  }
+}
+
+new File(vitalhome, "vitalservice").eachFileRecurse(FILES) {
+  if(it.name.endsWith(".jar")) {
+    jars.add(it.absolutePath)
+  }
+}
+
+new File(vitalhome, "vital-lucene").eachFileRecurse(FILES) {
+  if(it.name.endsWith(".jar")) {
+    jars.add(it.absolutePath)
+  }
+}
+
+if( new File(vitalhome, "vital-dynamodb").exists() ) {
+  new File(vitalhome, "vital-dynamodb").eachFileRecurse(FILES) {
+    if(it.name.endsWith(".jar")) {
+      jars.add(it.absolutePath)
+    }
+  }
+}
+
+File tripleStoreMod = new File(vitalhome, 'vital-triplestore')
+if(tripleStoreMod.exists() && tripleStoreMod.isDirectory()) {
+  tripleStoreMod .eachFileRecurse(FILES) {
+    if(it.name.endsWith(".jar")) {
+      jars.add(it.absolutePath)
+    }
+  }
+}
+
+
+new File(vitalhome, "domain-groovy-jar").eachFile(FILES) {
+  if(it.name.endsWith(".jar")) {
+      jars.add(it.absolutePath)
+  }
+}
+
+
+new File(homeDir, "lib").eachFileRecurse(FILES) {
+  if(it.name.endsWith(".jar")) {
+    jars.add(it.absolutePath)
+  }
+}
+
+//println System.getenv("PATH");
+
+
+/*** vital-groovy filter ***/
+def vitalGroovyDir = new File(vitalhome, 'vital-groovy')
+if(vitalGroovyDir.exists() && vitalGroovyDir.isDirectory()) {
+
+  for(Iterator<String> iterator = jars.iterator(); iterator.hasNext(); ) {
+  
+    String jar = iterator.next()
+
+    def n = new File(jar).name
+    
+    if(n.matches('groovy\\-all\\-.+\\.jar')) {
+    
+      iterator.remove()
+      
+    }
+  
+  }
+  
+  File groovyUpdated = null
+  
+  vitalGroovyDir.eachFileRecurse(FILES) {
+  
+  	if(it.name.endsWith('.jar')) {
+  	
+      if(it.name.matches('groovy\\-all\\-.+\\.jar')) {
+        groovyUpdated = it
+      }
+  	
+      jars.add(it.absolutePath);
+      
+    }
+    
+  }
+  
+  if(groovyUpdated == null) {
+    System.err.println "Alternative groovy jar not found in: ${vitalGroovyDir.absolutePath}"
+    return
+  }
+   
+  println "GROOVY jar replaced with vital version: ${groovyUpdated.absolutePath}"
+   
+}
+/*** end of vital-groovy filter ***/
+
+
+List cmd = ['java', '-cp', (String)jars.join(File.pathSeparator), mainClass];
+
+for(String a : args) {
+	cmd.add(a);
+}
+
+//println(cmd);
+
+def process = new ProcessBuilder(cmd).redirectErrorStream(true).start()
+process.inputStream.eachLine {println it}
