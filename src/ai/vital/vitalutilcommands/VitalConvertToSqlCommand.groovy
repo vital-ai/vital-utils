@@ -25,6 +25,7 @@ class VitalConvertToSqlCommand extends AbstractUtil {
 			ow longOpt: 'overwrite', "overwrite output file if exists", args: 0, required: false
 			soh longOpt: 'skip-output-header', "skip output csv header (block -> csv case)", args: 0, required: false
 			tn longOpt: 'table-name', "required when .sql[.gz] output", args: 1, required: false
+			bs longOpt: 'batch-size', "batch size, required when .sql.gz output", args: 1, required: false
 		}
 		
 		boolean displayHelp = args.length == 0
@@ -51,6 +52,8 @@ class VitalConvertToSqlCommand extends AbstractUtil {
 		boolean overwrite = options.ow ? true : false
 		boolean skipOutputHeader = options.soh ? true : false
 		String tableName = options.tn ? options.tn : null
+		
+		Integer batchSize = options.bs ? Integer.parseInt(options.bs) : null
 		
 		
 		println "Input file: ${inputFile.absolutePath}"
@@ -86,6 +89,10 @@ class VitalConvertToSqlCommand extends AbstractUtil {
 				println "Ignoring --table-name param - CSV mode"
 			}
 			
+			if(batchSize != null) {
+				println "Ignoring --batch-size param - CSV mode"
+			}
+			
 			println "Skip output header ? ${skipOutputHeader}"
 			
 		} else if(oname.endsWith('.sql.gz') || oname.endsWith('.sql')) {
@@ -95,7 +102,16 @@ class VitalConvertToSqlCommand extends AbstractUtil {
 				error "No --table-name param, required with .sql output"
 			}
 			
+			if(batchSize == null) {
+				error("no --batch-size param, required with .sql output")
+			}
+			
+			if(batchSize < 1) {
+				error("batch-size must be > 0")
+			}
+			
 			println "Output table name: ${tableName}"
+			println "Batch size: ${batchSize}"
 			
 			if(skipOutputHeader) println "Ignoring --skip-output-header param - SQL mode"
 			
@@ -129,6 +145,8 @@ class VitalConvertToSqlCommand extends AbstractUtil {
 			writer.write("\n")
 		}
 		
+		String insertInto = null;
+		
 		if(outputSQL) {
 		
 			List<String> columns = ToSQLRowsHandler.getColumns();
@@ -141,7 +159,7 @@ class VitalConvertToSqlCommand extends AbstractUtil {
 			
 			sb.append(") VALUES \n")
 			
-			writer.append(sb.toString())
+			insertInto = sb.toString();
 				
 		}	
 
@@ -151,6 +169,8 @@ class VitalConvertToSqlCommand extends AbstractUtil {
 		VitalSigns.get()		
 		
 		long start = System.currentTimeMillis()
+		
+		int batchCounter = 0;
 		
 		for( BlockIterator iterator = BlockCompactStringSerializer.getBlocksIterator(inputFile); iterator.hasNext(); ) {
 				
@@ -163,15 +183,31 @@ class VitalConvertToSqlCommand extends AbstractUtil {
 				if(outputSQL) {
 					
 					for( String s : g.toSQLRows() ) {
+				
+						if(batchCounter == 0) {
+							
+							writer.write(insertInto)
+							
+						} else {
 						
+							writer.write(",\n");	
+						
+						}
+							
+						batchCounter++;	
 						r++
 						
-						if(r > 1) {
-							writer.write(", \n")
+						writer.write(s)
+						
+						if(batchCounter % batchSize == 0) {
+							//close the batch
+							writer.append(";\n")
+							batchCounter = 0
 						}
 						
-						writer.write(s)
+						
 					}
+					
 				}
 				
 				if(outputCSV) {
@@ -187,6 +223,10 @@ class VitalConvertToSqlCommand extends AbstractUtil {
 				
 			}	
 			
+		}
+		
+		if(batchCounter > 0) {
+			writer.append(";\n")
 		}
 		
 		if(outputSQL) {
