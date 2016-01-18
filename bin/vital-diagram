@@ -44,7 +44,7 @@ new File(vitalhome, "vitalsigns/lib").eachFileRecurse(FILES) {
 }
 
 
-new File(vitalhome, "domain-jar").eachFile(FILES) {
+new File(vitalhome, "vital-domain").eachFile(FILES) {
   if(it.name.endsWith(".jar")) {
       jars.add(it.absolutePath)
   }
