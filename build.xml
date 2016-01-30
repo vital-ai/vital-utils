@@ -90,7 +90,12 @@
 			</fileset>
 		</copy>
 		
-		<jar destfile="${utils.dist.jar}" basedir="${utils.build.dir}" compress="true"></jar>
+		<jar destfile="${utils.dist.jar}" basedir="${utils.build.dir}" compress="true">
+			<manifest>
+				<attribute name="vital-module-name" value="vitalutil" />
+				<attribute name="vital-module-version" value="${dist.version}" />
+			</manifest>
+		</jar>
 		
 		
 		

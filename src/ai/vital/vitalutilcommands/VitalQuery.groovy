@@ -5,11 +5,13 @@ import ai.vital.vitalsigns.model.property.IProperty
 import ai.vital.vitalsigns.model.property.URIProperty;
 import ai.vital.query.querybuilder.VitalBuilder;
 import ai.vital.vitalservice.VitalService
-import ai.vital.vitalservice.VitalStatus;
+import ai.vital.vitalservice.VitalStatus
 import ai.vital.vitalservice.factory.VitalServiceFactory;
 import ai.vital.vitalservice.query.ResultElement;
 import ai.vital.vitalservice.query.ResultList;
-import ai.vital.vitalservice.query.VitalExportQuery;
+import ai.vital.vitalservice.query.VitalExportQuery
+import ai.vital.vitalservice.query.VitalExternalSparqlQuery
+import ai.vital.vitalservice.query.VitalExternalSqlQuery;
 import ai.vital.vitalservice.query.VitalGraphQuery
 import ai.vital.vitalservice.query.VitalPathQuery;
 import ai.vital.vitalservice.query.VitalSelectAggregationQuery;
@@ -200,6 +202,10 @@ class VitalQuery extends AbstractUtil {
 		
 		boolean sparqlQuery = queryObject instanceof VitalSparqlQuery
 		
+		boolean externalSparql = queryObject instanceof VitalExternalSparqlQuery
+		
+		boolean externalSql = queryObject instanceof VitalExternalSqlQuery
+		
 		boolean aggregationQuery = false 
 		boolean selectDistinctQuery = false
 		if(selectQuery) {
@@ -240,8 +246,19 @@ class VitalQuery extends AbstractUtil {
 				error("Path query output file must be a .vital[.gz] file")
 				return
 			}
-		} else if(sparqlQuery) {
-			error("Sparql query type not supported")
+//		} else if(sparqlQuery) {
+//			error("Sparql query type not supported")
+		} else if(sparqlQuery || externalSparql || externalSql) {
+		
+			if(outputSparql) {
+				error("Output sparql is not supported for query of type: " + queryObject.class.simpleName)
+			}
+			
+			if(!outputSparql && output != null && !blockOutput) {
+				error("Graph query output file must be a .vital[.gz] file")
+				return
+			}
+		
 		} else {
 			error("Unhandled query type: ${queryObject?.class.simpleName}")
 			return
@@ -258,7 +275,9 @@ class VitalQuery extends AbstractUtil {
 
 		ResultList rl = null;
 
-		if(queryObject instanceof VitalSelectQuery || queryObject instanceof VitalGraphQuery || queryObject instanceof VitalPathQuery ) {
+		if(queryObject instanceof VitalSelectQuery || queryObject instanceof VitalGraphQuery || queryObject instanceof VitalPathQuery 
+			
+			|| queryObject instanceof VitalExternalSparqlQuery || queryObject instanceof VitalExternalSqlQuery) {
 
 			rl = service.query(queryObject)
 		
@@ -356,12 +375,15 @@ class VitalQuery extends AbstractUtil {
 		List<GraphObject> objects = []
 		Map<String, GraphObject> mapped = [:]
 
-		if(selectQuery || pathQuery) {
+		boolean normalOutputMode = selectQuery || pathQuery || sparqlQuery || externalSparql || externalSql
+		
+		if(normalOutputMode) {
 
 			for(GraphObject g : rl) {
 
 				objects.add(g)
 			}
+			
 		} else {
 			for(GraphMatch gm : rl) {
 
@@ -421,7 +443,7 @@ class VitalQuery extends AbstractUtil {
 
 		int i = 0
 
-		if(selectQuery || pathQuery) {
+		if(normalOutputMode) {
 		
 			for(GraphObject g : objects) {
 				
