@@ -466,9 +466,13 @@ class VitalImport extends AbstractUtil {
 							
 						}
 						
-						service.bulkImport(segmentObj, inputStream)
+						VitalStatus status = service.bulkImport(segmentObj, inputStream)
 						
-						println "Bulk import complete, time: ${t() - s}ms"
+						if(status.status == VitalStatus.Status.ok) {
+							println "Bulk import complete, time: ${t() - s}ms"
+						} else {
+							System.err.println("Bulk import error: " + status.message + ", time: ${t() - s}ms")
+						}
 															
 						
 					} finally {

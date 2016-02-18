@@ -246,13 +246,19 @@ class VitalExport extends AbstractUtil {
 			println "Bulk dumping to vital format..."
 			BufferedOutputStream os = new BufferedOutputStream(outputStream)
 			
-			service.bulkExport(segmentObj, os)
+			VitalStatus status = service.bulkExport(segmentObj, os)
+			
 			
 			os.close()
 			
-			println "Bulk export complete"
+			if(status.status != VitalStatus.Status.ok) {
+				error("Bulk export error: " + status.message)
+			} else {
+				println "Bulk export complete"
+			}
 			
 			return
+			
 		
 		} else {
 		
@@ -311,6 +317,11 @@ class VitalExport extends AbstractUtil {
 				sq.offset = offset
 				
 				ResultList rl = service.query(sq)
+				
+				if(rl.status.status != VitalStatus.Status.ok) {
+					error("Export query failed: " + rl.status.message)
+					return
+				}
 				
 				if(total < 0) total = rl.totalResults != null ? rl.totalResults.intValue() : 0
 				
