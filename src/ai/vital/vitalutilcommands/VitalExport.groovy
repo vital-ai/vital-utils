@@ -235,7 +235,7 @@ class VitalExport extends AbstractUtil {
 		} else if(bulkMode) {
 		
 		
-			if(!output.getName().endsWith(".vital") || output.getName().endsWith(".vital.gz")) error("only .vital[.gz] output file in bulk mode")
+			if(! ( output.getName().endsWith(".vital") || output.getName().endsWith(".vital.gz") ) ) error("only .vital[.gz] output file in bulk mode")
 			
 			OutputStream outputStream = new FileOutputStream(output)
 			
