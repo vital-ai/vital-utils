@@ -74,6 +74,28 @@ if(sparqlMod.exists() && sparqlMod.isDirectory()) {
 }
 
 
+File sqlMod = new File(vitalhome, 'vital-sql')
+if(sqlMod.exists() && sqlMod.isDirectory()) {
+  List sqlJars = []
+  sqlMod.eachFileRecurse(FILES) {
+    if(it.name.endsWith('.jar')) {
+      sqlJars.add(it)
+    }
+  }
+  sqlJars.sort { j1, j2 ->
+    boolean hive1 = j1.name.startsWith('hive-jdbc-');
+    boolean hive2 = j2.name.startsWith('hive-jdbc-');
+    if(hive1) return -1
+    if(hive2) return 1
+    return 0
+  }
+  jars.addAll(sqlJars.absolutePath)
+} else {
+  System.err.println "No vital-sql module found, it is obligatory for vitalconverttosql to work"
+  return 1
+}
+
+
 new File(vitalhome, "domain-groovy-jar").eachFile(FILES) {
   if(it.name.endsWith(".jar")) {
       jars.add(it.absolutePath)
