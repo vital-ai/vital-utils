@@ -7,11 +7,14 @@ import org.apache.commons.io.IOUtils;
 import ai.vital.vitalservice.EndpointType;
 import ai.vital.vitalsigns.model.property.URIProperty;
 import ai.vital.vitalservice.VitalService;
-import ai.vital.vitalservice.VitalStatus;
+import ai.vital.vitalservice.VitalStatus
+import ai.vital.vitalservice.admin.VitalServiceAdmin;
 import ai.vital.vitalservice.factory.VitalServiceFactory;
 import ai.vital.vitalservice.query.ResultElement;
 import ai.vital.vitalservice.query.ResultList;
-import ai.vital.vitalsigns.model.VITAL_Node;
+import ai.vital.vitalsigns.model.VITAL_Node
+import ai.vital.vitalsigns.model.VitalApp;
+import ai.vital.vitalsigns.model.VitalServiceAdminKey;
 import ai.vital.vitalsigns.model.VitalServiceKey;
 
 class VitalFtpCommand extends AbstractUtil {
@@ -39,8 +42,10 @@ class VitalFtpCommand extends AbstractUtil {
 		def putCLI = new CliBuilder(usage: "${VF} ${CMD_PUT} [options]", stopAtNonOption: false)
 		putCLI.with {
 			f longOpt: "file", "local file to upload", args: 1, required: true
+			c longOpt: "commons", "put file into commons area, --admin-key required", args:0, required: false
 			ow longOpt: "overwrite", "overwrite remote file if exists", args: 0, required: false
 			sk longOpt: 'service-key', "vital service key, default ${defaultServiceKey}", args: 1, required: false
+			ak longOpt: 'admin-key', "vital admin key, used with --commons only, default ${defaultServiceKey}", args: 1, required: false
 			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 		}
 		cmd2CLI.put(CMD_PUT, putCLI)
@@ -66,6 +71,7 @@ class VitalFtpCommand extends AbstractUtil {
 		delCLI.with {
 			n longOpt: "name", "remote file name", args: 1, required: true
 			sk longOpt: 'service-key', "vital service key, default ${defaultServiceKey}", args: 1, required: false
+			ak longOpt: 'admin-key', "vital admin key, used with commons/* files, required if default ${defaultServiceKey}", args: 1, required: false
 			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
 		}
 		cmd2CLI.put(CMD_DEL, delCLI)
@@ -122,7 +128,6 @@ class VitalFtpCommand extends AbstractUtil {
 		
 		String profile = options.prof ? options.prof : null
 		
-		VitalServiceKey serviceKey = getVitalServiceKey(options)
 
 		if(profile != null) {
 			println "Setting custom vital service profile: ${profile}"
@@ -131,11 +136,37 @@ class VitalFtpCommand extends AbstractUtil {
 			profile = VitalServiceFactory.DEFAULT_PROFILE
 		}
 		
-		VitalService service = VitalServiceFactory.openService(serviceKey, profile)
 		
-		if(service.getEndpointType() != EndpointType.VITALPRIME) {
-			error "${VF} only works with vitalprime"
+		boolean commons = false
+		
+		if( cmd == CMD_PUT && options.c ) commons = true
+		
+		if( cmd == CMD_DEL && options.n.startsWith("commons/") ) commons = true 
+		
+		VitalServiceAdmin adminService = null
+		VitalService service = null
+		if(commons) {
+
+			println "commons area, using admin key"			
+			VitalServiceAdminKey adminKey = getVitalServiceAdminKey(options)
+			adminService = VitalServiceFactory.openAdminService(adminKey, profile)
+			
+			if(adminService.getEndpointType() != EndpointType.VITALPRIME) {
+				error "${VF} only works with vitalprime"
+			}
+			
+		} else {
+		
+			println "Putting into app area"
+		
+			VitalServiceKey serviceKey = getVitalServiceKey(options)
+			service = VitalServiceFactory.openService(serviceKey, profile)
+			if(service.getEndpointType() != EndpointType.VITALPRIME) {
+				error "${VF} only works with vitalprime"
+			}
+			
 		}
+		
 		
 		if(cmd == CMD_LS) {
 			
@@ -212,9 +243,16 @@ class VitalFtpCommand extends AbstractUtil {
 			
 			String n = srcFile.name
 			
+			println "Uploading file remote file ${srcFile.absolutePath}${commons ? ' [commons]' : ''}"
+			
 			boolean overwrite = options.ow ? true : false
 			
-			VITAL_Node node = getFile(service, n)
+			VITAL_Node node = null
+			if(commons) {
+				node = getCommonsFile(adminService, n)
+			} else {
+				node = getFile(service, n)
+			}
 			
 			if(node != null) {
 				
@@ -232,7 +270,13 @@ class VitalFtpCommand extends AbstractUtil {
 				
 				inputStream = new BufferedInputStream(new FileInputStream(srcFile))
 				
-				VitalStatus status = service.uploadFile(URIProperty.withString(FTP_URI), n, inputStream, overwrite)
+				VitalStatus status = null
+				if(commons) {
+					status = adminService.uploadFile(VitalApp.withId('commons'), URIProperty.withString(FTP_URI), n, inputStream, overwrite)
+				} else {
+					status = service.uploadFile(URIProperty.withString(FTP_URI), n, inputStream, overwrite)
+				}
+				
 				println "Status: ${status}"
 			} catch(Exception e) {
 				error e.localizedMessage
@@ -244,9 +288,14 @@ class VitalFtpCommand extends AbstractUtil {
 		
 			String n = options.n
 			
-			println "Deleting remote file ${n}"
+			println "Deleting remote file ${n}${commons ? ' [commons]' : ''}"
 		
-			VITAL_Node node = getFile(service, n)
+			VITAL_Node node = null
+			if(commons) {
+				node = getCommonsFile(adminService, n)
+			} else {
+				node = getFile(service, n)
+			}
 			if(node == null) error("File not found: ${n}")
 			
 			if(node.active) {
@@ -254,7 +303,12 @@ class VitalFtpCommand extends AbstractUtil {
 			}
 		
 			try {
-				VitalStatus status = service.deleteFile(URIProperty.withString(FTP_URI), n)
+				VitalStatus status = null
+				if(commons) {
+					status = adminService.deleteFile(VitalApp.withId('commons'), URIProperty.withString(FTP_URI), n)
+				} else {
+					status = service.deleteFile(URIProperty.withString(FTP_URI), n)
+				}
 				println "Status: ${status}"
 			} catch(Exception e) {
 				error e.localizedMessage
@@ -289,6 +343,24 @@ class VitalFtpCommand extends AbstractUtil {
 		ResultList res = null
 		try {
 			res = service.callFunction("commons/scripts/VitalFTP_ListFiles.groovy", [name: n])
+			if(res.status.status != VitalStatus.Status.ok) {
+				error res.status.message
+			}
+		} catch(Exception e) {
+			error "Couldn't list files: ${e.localizedMessage}"
+		}
+
+		VITAL_Node node = res.results.size() > 0 ? (VITAL_Node) res.results[0].graphObject : null
+
+		return node
+		
+	}
+	
+	static VITAL_Node getCommonsFile(VitalServiceAdmin adminService, String n) {
+		
+		ResultList res = null
+		try {
+			res = adminService.callFunction(VitalApp.withId('commons'), "commons/scripts/VitalFTP_ListFiles.groovy", [name: n])
 			if(res.status.status != VitalStatus.Status.ok) {
 				error res.status.message
 			}

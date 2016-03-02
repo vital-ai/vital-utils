@@ -2,6 +2,7 @@ package ai.vital.vitalutilcommands
 
 import ai.vital.vitalsigns.block.BlockCompactStringSerializer
 import ai.vital.vitalsigns.model.VitalApp
+import ai.vital.vitalsigns.model.VitalServiceAdminKey;
 import ai.vital.vitalsigns.model.VitalServiceKey;
 import ai.vital.vitalutilcommands.io.ProgressInputStream;
 import groovy.transform.CompileStatic;
@@ -11,7 +12,8 @@ import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
 import org.apache.commons.io.FileUtils
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.IOUtils
+import org.apache.xerces.dom.DeferredAttrImpl;;
 
 class AbstractUtil {
 
@@ -38,6 +40,23 @@ class AbstractUtil {
 		serviceKeyObject.key = serviceKey
 		
 		return serviceKeyObject
+	}
+	
+	static VitalServiceAdminKey getVitalServiceAdminKey(def options) {
+		
+		String adminKey = options.ak ? options.ak : null
+		
+		if(adminKey) {
+			println "admin key: ${adminKey}"
+		} else {
+			adminKey = defaultServiceKey
+			println "default admin key: ${defaultServiceKey}"
+		}
+		
+		VitalServiceAdminKey adminKeyObject = new VitalServiceAdminKey().generateURI((VitalApp) null)
+		adminKeyObject.key = adminKey
+		return adminKeyObject
+		
 	}
 	
 	public static List<File> getBlockFilesFromPath(File path) {
