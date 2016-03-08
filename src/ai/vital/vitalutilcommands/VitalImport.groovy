@@ -51,6 +51,7 @@ class VitalImport extends AbstractUtil {
 			bf longOpt: "bigFiles", "[true|false] flag, force big files flag (only vitalprime), default true", args: 1, required: false
 			sk longOpt: 'service-key', "vital service key, default ${defaultServiceKey}", args: 1, required: false
 			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
+			ds longOpt: 'dataset-uri', 'optional dataset URI (provenance), \'_\' (underscore) will keep current provenance value', args: 1, required: false
 			//bf longOpt: 'bigfiles', "the flag to import the data in background, after they're uploaded", args: 0 , required: false
 		}
 		
@@ -121,6 +122,8 @@ class VitalImport extends AbstractUtil {
 		}
 		
 		
+		String datasetURI = options.ds ? options.ds : null
+		
 		List files = options.fs ? options.fs : null
 		
 		if(files == null || files.isEmpty()) error("No files parameter")
@@ -145,6 +148,9 @@ class VitalImport extends AbstractUtil {
 		println "Skip data check ? ${skipCheck}"
 		boolean bulkMode = options.bulk ? true : false
 		println "bulk mode ? $bulkMode"
+		println "Dataset URI: ${datasetURI}"
+		
+		if(datasetURI == '_') datasetURI = ''
 		
 		if(check && skipCheck) {
 			error "--check and --skip-check flags are mutually exclusive"
@@ -305,7 +311,7 @@ class VitalImport extends AbstractUtil {
 			 
 			try {
 				
-				rl = service.callFunction("commons/scripts/RunJob.groovy", [function: 'commons/scripts/ImportTempFilesData.groovy', filesPaths: filesPaths, blocksPerBatch: blocksPerBatch, segment: segment])
+				rl = service.callFunction("commons/scripts/RunJob.groovy", [function: 'commons/scripts/ImportTempFilesData.groovy', filesPaths: filesPaths, blocksPerBatch: blocksPerBatch, segment: segment, datasetURI: datasetURI])
 			} catch(Exception e) {
 				error e.localizedMessage
 			}		
@@ -466,7 +472,7 @@ class VitalImport extends AbstractUtil {
 							
 						}
 						
-						VitalStatus status = service.bulkImport(segmentObj, inputStream)
+						VitalStatus status = service.bulkImport(segmentObj, inputStream, datasetURI)
 						
 						if(status.status == VitalStatus.Status.ok) {
 							println "Bulk import complete, time: ${t() - s}ms"
@@ -519,7 +525,7 @@ class VitalImport extends AbstractUtil {
 								if(blocks.size() >= blocksPerBatch) {
 
 									//insert
-									persist(segmentObj, blocks, service)
+									persist(segmentObj, blocks, service, datasetURI)
 
 									if(verbose) {
 										println"imported ${c} blocks (last batch ${t() - stage}ms) ..."
@@ -553,7 +559,7 @@ class VitalImport extends AbstractUtil {
 								if(blocks.size() >= blocksPerBatch) {
 
 									//insert
-									persist(segmentObj, blocks, service)
+									persist(segmentObj, blocks, service, datasetURI)
 
 									if(verbose) {
 										println"imported ${c} blocks (last batch ${t() - stage}ms) ..."
@@ -594,7 +600,7 @@ class VitalImport extends AbstractUtil {
 
 
 					if(blocks.size() > 0) {
-						persist(segmentObj, blocks, service)
+						persist(segmentObj, blocks, service, datasetURI)
 					}
 
 					long stop = t()
@@ -610,14 +616,24 @@ class VitalImport extends AbstractUtil {
 			
 	}
 	
-	static persist(VitalSegment segment, List<VitalBlock> l, VitalService service) {
+	static persist(VitalSegment segment, List<VitalBlock> l, VitalService service, String datasetURI) {
 	
 		List<GraphObject> gos = []
 		
 		for(VitalBlock b : l) {
-			gos.add(b.mainObject)
-			gos.addAll(b.dependentObjects)
-		}
+			
+			for(GraphObject g : b.toList()) {
+			
+				if( ! ''.equals(datasetURI)) {
+					
+					g.provenance = datasetURI
+					
+				}  
+					
+				gos.add(g)
+			}
+			
+		}		
 		
 		if(gos.size() > 0) {
 			service.save(segment, gos, true)

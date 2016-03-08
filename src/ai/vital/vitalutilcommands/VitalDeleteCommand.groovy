@@ -27,7 +27,8 @@ import ai.vital.vitalservice.query.VitalSelectQuery
 import ai.vital.vitalsigns.VitalSigns;
 import ai.vital.vitalsigns.meta.PathElement
 import ai.vital.vitalsigns.model.GraphMatch;
-import ai.vital.vitalsigns.model.GraphObject;
+import ai.vital.vitalsigns.model.GraphObject
+import ai.vital.vitalsigns.model.VITAL_Node;
 import ai.vital.vitalsigns.model.VitalApp
 import ai.vital.vitalsigns.model.VitalSegment
 import ai.vital.vitalsigns.model.VitalServiceKey;
@@ -49,6 +50,7 @@ class VitalDeleteCommand extends AbstractUtil {
 			b longOpt: "background", "delete in as background job (vitalprime only)", args: 0, required: false
 			sk longOpt: 'service-key', "vital service key, default ${defaultServiceKey}", args: 1, required: false
 			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
+			ds longOpt: 'dataset-uri', 'optional dataset URI (provenance) filter, applied to segment mode only', args: 1, required: false
 		}
 		
 		boolean displayHelp = args.length == 0
@@ -104,6 +106,9 @@ class VitalDeleteCommand extends AbstractUtil {
 		
 		boolean background = options.b ? true : false
 		
+		
+		String datasetURI = options.ds ? options.ds : null
+		
 
 		if(background && et != EndpointType.VITALPRIME) {
 			error("Background delete operation may only performed in vitalprime endpoint")
@@ -114,6 +119,10 @@ class VitalDeleteCommand extends AbstractUtil {
 		
 		if(queryScriptFile != null) {
 			
+			if(datasetURI != null) {
+				error("--dataset-uri must not be used with query script")
+				return
+			}
 			
 			if(expanded) {
 				
@@ -185,22 +194,59 @@ class VitalDeleteCommand extends AbstractUtil {
 			
 		}
 				
+		println "Dataset URI: ${datasetURI}"
 		println "Expanded ? ${expanded}"
 		println "Check ? ${check}"
 		
 
 		if(segmentObject != null) {
 			
-			if(check) {
-				println "Whole segment: ${segment} will be purged, check=true - exiting."
-				return
-			}
+			if(datasetURI != null) {
+
+				if(expanded) {
+					println "Expanded flag ignored with datasetURI and segment mode"
+					expanded = false
+				}
+				
+				if(et != EndpointType.VITALPRIME) {
+					
+					sq = new VitalBuilder().query {
+						
+						SELECT {
+							
+							value segments: [segmentObject]
+							
+							node_constraint { VITAL_Node.props().provenance.equalTo(URIProperty.withString(datasetURI)) }
+							
+						}
+						
+					}.toQuery()
+					
+				} else {
+				
+					//just delete it remotely
+					if(check) {
+						println "All data with datasetURI: ${datasetURI} will be delete from segment: ${segment} remotely"
+						return
+					}
+				
+				}
+				
+				
+			} else {
 			
-			//execute a simple delete that will purge all segment
-			URIProperty matchAllURI = URIProperty.getMatchAllURI(segmentObject)
-			VitalStatus status = service.delete(matchAllURI)
-			println "status: ${status}"
-			return
+				if(check) {
+					println "Whole segment: ${segment} will be purged, check=true - exiting."
+					return
+				}
+				
+				//execute a simple delete that will purge all segment
+				URIProperty matchAllURI = URIProperty.getMatchAllURI(segmentObject)
+				VitalStatus status = service.delete(matchAllURI)
+				println "status: ${status}"
+				return
+				
+			}
 			
 		}		
 		
@@ -320,7 +366,7 @@ class VitalDeleteCommand extends AbstractUtil {
 			
 			String mainScript = 'commons/scripts/DeleteBatch.groovy'
 			
-			Map params = [selectQuery: sq, expanded: expanded]
+			Map params = [selectQuery: sq, expanded: expanded, segment: segmentObject, datasetURI: datasetURI]
 			
 			String toExecute = mainScript
 			if(background) {

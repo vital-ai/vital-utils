@@ -13,7 +13,8 @@ import ai.vital.vitalsigns.block.BlockCompactStringSerializer
 import ai.vital.vitalsigns.model.GraphObject;
 import ai.vital.vitalsigns.model.VITAL_Node
 import ai.vital.vitalsigns.model.VitalSegment
-import ai.vital.vitalsigns.model.VitalServiceKey;
+import ai.vital.vitalsigns.model.VitalServiceKey
+import ai.vital.vitalsigns.model.properties.Property_hasProvenance;
 import ai.vital.vitalsigns.ontology.VitalCoreOntology;
 
 import java.util.zip.GZIPOutputStream
@@ -50,6 +51,7 @@ class VitalExport extends AbstractUtil {
 			bf longOpt: "bigFiles", "[true|false] flag, force big files flag (only vitalprime), default true", args: 1, required: false
 			sk longOpt: 'service-key', "vital service key, default ${defaultServiceKey}", args: 1, required: false
 			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
+			ds longOpt: 'dataset-uri', 'optional dataset URI (provenance) filter', args: 1, required: false
 		}
 		
 		boolean displayHelp = args.length == 0
@@ -125,9 +127,11 @@ class VitalExport extends AbstractUtil {
 		
 		if(segment == null) error("No segment parameter")
 		
+		if(!options.o) throw new Exception("No output parameter")
+		
 		File output = new File(options.o)
 		
-		if(!options.o) throw new Exception("No output parameter")
+		String datasetURI = options.ds ? options.ds : null
 		
 		Integer blockSize = DEFAULT_BLOCK_SIZE
 		if(options.b) {
@@ -137,7 +141,7 @@ class VitalExport extends AbstractUtil {
 		
 		println "Segment: ${segment}"
 		println "block size: ${blockSize}"
-
+		println "Dataset URI: ${datasetURI}"
 		boolean bulkMode = options.bulk ? true : false
 		println "bulk mode ? $bulkMode"
 		
@@ -216,7 +220,7 @@ class VitalExport extends AbstractUtil {
 			 
 			try {
 				
-				rl = service.callFunction("commons/scripts/RunJob.groovy", [function: 'commons/scripts/ExportToTempFile.groovy', outputFilename: outFile, blockSize: blockSize, segment: segment, limit: DEFAULT_LIMIT])
+				rl = service.callFunction("commons/scripts/RunJob.groovy", [function: 'commons/scripts/ExportToTempFile.groovy', outputFilename: outFile, blockSize: blockSize, segment: segment, limit: DEFAULT_LIMIT, datasetURI: datasetURI])
 			} catch(Exception e) {
 				error e.localizedMessage
 			}		
@@ -246,7 +250,7 @@ class VitalExport extends AbstractUtil {
 			println "Bulk dumping to vital format..."
 			BufferedOutputStream os = new BufferedOutputStream(outputStream)
 			
-			VitalStatus status = service.bulkExport(segmentObj, os)
+			VitalStatus status = service.bulkExport(segmentObj, os, datasetURI)
 			
 			
 			os.close()
@@ -275,6 +279,9 @@ class VitalExport extends AbstractUtil {
 			VitalExportQuery sq = new VitalExportQuery()
 			sq.segments = [segmentObj]
 			sq.limit = limit
+			
+			//don't use it - even less efficient
+			//sq.datasetURI = datasetURI
 			
 			int offset = 0;
 			
@@ -306,7 +313,10 @@ class VitalExport extends AbstractUtil {
 			}
 			
 			
+
 			int c = 0
+			
+			int skipped = 0
 			
 			int blocks = 0
 			
@@ -333,7 +343,21 @@ class VitalExport extends AbstractUtil {
 					offset = -1
 				}
 				
+				
 				for(ResultElement r : rl.results) {
+					
+					if(datasetURI != null) {
+						
+						if(datasetURI != null) {
+							String thisDataset = r.graphObject.provenance?.toString()
+							if(thisDataset == null || !datasetURI.equals(thisDataset)) {
+								//skip the object
+								skipped++;
+								continue;
+							}
+						}
+						
+					}
 					
 					if(writer != null) {
 						
@@ -399,7 +423,7 @@ class VitalExport extends AbstractUtil {
 				ntOut.close()
 			}
 			
-			println "Total graph objects exported: ${c}, blocks count: ${blocks}, ${t() - start}ms"
+			println "Total graph objects exported: ${c}, blocks count: ${blocks}, ${t() - start}ms ${datasetURI != null ? (', skipped' + skipped) : ''}"
 			
 		}
 	}
