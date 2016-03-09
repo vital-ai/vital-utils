@@ -226,7 +226,7 @@ class VitalDeleteCommand extends AbstractUtil {
 				
 					//just delete it remotely
 					if(check) {
-						println "All data with datasetURI: ${datasetURI} will be delete from segment: ${segment} remotely"
+						println "All data with datasetURI: ${datasetURI.size()} will be delete from segment: ${segment} remotely"
 						return
 					}
 				
@@ -323,9 +323,9 @@ class VitalDeleteCommand extends AbstractUtil {
 					}
 					println " [${ss.size()} expanded objects]"
 					
-					for(String u : ss) {
-						println "\t\t${u}"
-					}
+//					for(String u : ss) {
+//						println "\t\t${u}"
+//					}
 					
 					uris.addAll(ss)
 										
