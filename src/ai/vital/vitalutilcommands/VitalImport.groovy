@@ -51,7 +51,7 @@ class VitalImport extends AbstractUtil {
 			bf longOpt: "bigFiles", "[true|false] flag, force big files flag (only vitalprime), default true", args: 1, required: false
 			sk longOpt: 'service-key', "vital service key, default ${defaultServiceKey}", args: 1, required: false
 			prof longOpt: 'profile', 'vitalservice profile, default: default', args: 1, required: false
-			ds longOpt: 'dataset-uri', 'optional dataset URI (provenance), \'_\' (underscore) will keep current provenance value', args: 1, required: false
+			ds longOpt: 'dataset-uri', 'optional dataset URI - overrides provenance property for all objects', args: 1, required: false
 			//bf longOpt: 'bigfiles', "the flag to import the data in background, after they're uploaded", args: 0 , required: false
 		}
 		
@@ -96,6 +96,11 @@ class VitalImport extends AbstractUtil {
 			ServiceOperations ops = builder.queryString(FileUtils.readFileToString(importBuilderFile, "UTF-8")).toService()
 			
 			if(ops.importOptions == null) error("No import options parsed from builder file")
+			
+			//don't modify by default
+			if(ops.importOptions.datasetURI == null) {
+				ops.importOptions.datasetURI = ''
+			}
 
 			if(ops.getExportOptions() != null) error("Expected only import options, not export options")
 			if(ops.getOperations() != null && !ops.getOperations().isEmpty()) error("Expected only import options, no other operations")
@@ -150,7 +155,7 @@ class VitalImport extends AbstractUtil {
 		println "bulk mode ? $bulkMode"
 		println "Dataset URI: ${datasetURI}"
 		
-		if(datasetURI == '_') datasetURI = ''
+		if(datasetURI == null) datasetURI = ''
 		
 		if(check && skipCheck) {
 			error "--check and --skip-check flags are mutually exclusive"
