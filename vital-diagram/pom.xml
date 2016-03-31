@@ -155,9 +155,9 @@
 	<dependency>
       <groupId>vital-ai</groupId>
       <artifactId>commons-collections</artifactId>
-      <version>3.2.1</version>
+      <version>3.2.2</version>
       <scope>system</scope>
-      <systemPath>${VITAL_HOME}/vitalsigns/lib/commons-collections-3.2.1.jar</systemPath>
+      <systemPath>${VITAL_HOME}/vitalsigns/lib/commons-collections-3.2.2.jar</systemPath>
     </dependency>	
 
 	<dependency>
